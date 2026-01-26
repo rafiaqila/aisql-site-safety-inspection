@@ -13,6 +13,13 @@ This application analyzes site inspection images to:
 
 ---
 
+## 🎥 Demo Video
+▶️ **Application Demo (YouTube):**  
+[https://youtu.be/XXXXXXXXXXX](https://youtu.be/CPCsGUesCik
+)<img width="618" height="81" alt="image" src="https://github.com/user-attachments/assets/f987507d-b542-4064-a1b3-01cf88af1a89" />
+
+---
+
 ## 🏗️ Architecture Overview
 
 **Technology Stack**
@@ -108,6 +115,13 @@ Run these scripts **in order** during setup.
 - Corrective Actions Checklist (CSV)
 - Email notifications for high-risk sites
 - Historical risk trend tracking
+
+---
+
+## 📊 Presentation
+
+📁 `presentation/RAFI_AISQL_COMPETITION_SITE_SAFETY_HAZARD_RISK_INSPECTION.pptx`
+
 
 ---
 
