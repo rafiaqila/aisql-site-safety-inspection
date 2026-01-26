@@ -15,8 +15,8 @@ This application analyzes site inspection images to:
 
 ## 🎥 Demo Video
 ▶️ **Application Demo (YouTube):**  
-[https://youtu.be/XXXXXXXXXXX](https://youtu.be/CPCsGUesCik
-)<img width="618" height="81" alt="image" src="https://github.com/user-attachments/assets/f987507d-b542-4064-a1b3-01cf88af1a89" />
+https://youtu.be/CPCsGUesCik
+<img width="618" height="81" alt="image" src="https://github.com/user-attachments/assets/33d4dbd1-9593-4bf8-940c-9aada6b4580c" />
 
 ---
 
