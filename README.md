@@ -117,10 +117,22 @@ Run these scripts **in order** during setup.
 
 ---
 
-## 📊 Presentation
+## 📸 Sample Inputs
 
-📁 `presentation/RAFI_AISQL_COMPETITION_SITE_SAFETY_HAZARD_RISK_INSPECTION.pptx`
+### `input_images/`
+Contains sample site inspection images used for:
+- Local testing
+- Demo recordings
+- Reproducible analysis
 
+---
+## 📊 Presentation & Demo Assets
+
+### `presentation/`
+Contains presentation materials submitted with this project.
+
+- **PowerPoint slides**: 📁 `presentation/RAFI_AISQL_COMPETITION_SITE_SAFETY_HAZARD_RISK_INSPECTION.pptx`
+- **Demo screenshots** used in the presentation
 
 ---
 
