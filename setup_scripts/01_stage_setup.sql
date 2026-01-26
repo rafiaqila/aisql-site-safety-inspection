@@ -1,0 +1,8 @@
+USE DATABASE SNOWFLAKE_LEARNING_DB;
+USE SCHEMA PUBLIC;
+USE ROLE ACCOUNTADMIN;
+
+CREATE OR REPLACE STAGE safety_img_stg
+    DIRECTORY = (ENABLE = TRUE)
+    ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+    COMMENT = 'Internal stage for site inspection images used by Snowflake Cortex AISQL';
