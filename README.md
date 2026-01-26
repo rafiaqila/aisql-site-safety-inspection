@@ -99,7 +99,6 @@ Run these scripts **in order** during setup.
   - Comparable outputs
   - Auditability
 - Supports **up to 20 images per prompt**
-- Risk outputs are **assistive**, not compliance decisions
 
 ---
 
@@ -112,15 +111,8 @@ Run these scripts **in order** during setup.
 
 ---
 
-## 🛡️ Disclaimer
-
-This application is designed to **assist safety assessments**  
-and **does not replace certified safety inspections**.
-
----
-
 ## 👤 Author
 
 **Rafi Aqila Hidayat**  
-AISQL Site Safety Inspection Demo  
+Internal Snowflake AISQL Competition
 Synogize
