@@ -131,7 +131,7 @@ Contains sample site inspection images used for:
 ### `presentation/`
 Contains presentation materials submitted with this project.
 
-- **PowerPoint slides**: 📁 `presentation/RAFI_AISQL_COMPETITION_SITE_SAFETY_HAZARD_RISK_INSPECTION.pptx`
+- **PowerPoint slides**: 📁 `presentation/Rafi AISQL Challenge_Site Safety Hazard & Risk Inspection.pptx`
 - **Demo screenshots** used in the presentation
 
 ---
@@ -139,5 +139,4 @@ Contains presentation materials submitted with this project.
 ## 👤 Author
 
 **Rafi Aqila Hidayat**  
-Internal Snowflake AISQL Competition
-Synogize
+Synogize Snowflake AISQL Innovation Challenge
