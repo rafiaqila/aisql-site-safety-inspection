@@ -136,7 +136,7 @@ code, kbd, pre, samp { font-family:var(--mono); }
 }
 .app-eyebrow {
     font-family:var(--mono);
-    font-size:11px;
+    font-size:12px;
     letter-spacing:0.20em;
     text-transform:uppercase;
     color:var(--muted);
@@ -179,7 +179,7 @@ code, kbd, pre, samp { font-family:var(--mono); }
 }
 .sec-title-small {
     font-family:var(--display);
-    font-size:15px;
+    font-size:16px;
     font-weight:600;
     letter-spacing:0.10em;
     text-transform:uppercase;
@@ -188,7 +188,7 @@ code, kbd, pre, samp { font-family:var(--mono); }
 }
 .field-label {
     font-family:var(--display);
-    font-size:13px;
+    font-size:14px;
     font-weight:600;
     letter-spacing:0.12em;
     text-transform:uppercase;
@@ -246,11 +246,11 @@ div[class*="st-key-site_id"] input {
     background:var(--ink);
     color:var(--paper);
     font-family:var(--display);
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:0.16em;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:0.14em;
     text-transform:uppercase;
-    padding:7px 12px;
+    padding:8px 12px;
     display:flex;
     align-items:center;
     gap:8px;
@@ -262,8 +262,8 @@ div[class*="st-key-site_id"] input {
     flex:0 0 8px;
 }
 .plate-body {
-    padding:12px 14px;
-    font-size:14px;
+    padding:14px 16px;
+    font-size:15px;
     line-height:1.55;
     color:var(--ink);
 }
@@ -313,16 +313,16 @@ div[class*="st-key-site_id"] input {
 .sev-seg i {
     display:block;
     flex:1;
-    height:6px;
+    height:8px;
     background:var(--rule);
 }
 .sev-label {
     font-family:var(--display);
-    font-size:12px;
-    font-weight:600;
-    letter-spacing:0.14em;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.12em;
     text-transform:uppercase;
-    margin-top:6px;
+    margin-top:8px;
 }
 
 /* ---------- numerals ---------- */
@@ -336,22 +336,30 @@ div[class*="st-key-site_id"] input {
 }
 .score-badge {
     font-family:var(--mono);
-    font-size:22px;
+    font-size:34px;
     font-weight:700;
     line-height:1;
-    padding:10px 0 4px 0;
+    padding:8px 0 4px 0;
     display:block;
 }
 .score-denom {
     font-family:var(--mono);
-    font-size:11px;
+    font-size:13px;
     font-weight:400;
     color:var(--muted);
     letter-spacing:0.04em;
 }
+.score-label {
+    font-family:var(--display);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+    color:var(--muted);
+}
 .img-id {
     font-family:var(--mono);
-    font-size:11.5px;
+    font-size:13px;
     font-weight:400;
     letter-spacing:0.02em;
     color:var(--muted);
@@ -361,7 +369,7 @@ div[class*="st-key-site_id"] input {
 /* ---------- tags ---------- */
 .tag {
     display:inline-block;
-    font-size:12px;
+    font-size:13px;
     font-weight:500;
     color:var(--ink);
     background:#F3F1EA;
@@ -377,7 +385,7 @@ div[class*="st-key-site_id"] input {
 }
 
 /* ---------- lists ---------- */
-.clean-list { margin:0; padding-left:18px; line-height:1.7; font-size:14px; }
+.clean-list { margin:0; padding-left:18px; line-height:1.7; font-size:15px; }
 .clean-list li { margin-bottom:6px; }
 .rank-list { margin:0; padding-left:0; list-style:none; counter-reset:rank; }
 .rank-list li {
@@ -385,7 +393,7 @@ div[class*="st-key-site_id"] input {
     position:relative;
     padding-left:34px;
     margin-bottom:12px;
-    font-size:14px;
+    font-size:15px;
     line-height:1.55;
 }
 .rank-list li::before {
@@ -509,7 +517,19 @@ div[class*="st-key-site_id"] input {
     background:#1F242B;
     border:1px solid #2E353E;
 }
-[data-testid="stSidebar"] [data-testid="stExpander"] summary { color:var(--amber); }
+/* Streamlit paints <summary> with a translucent light overlay, which reads as
+   a pale strip on the dark panel and drops the icon to ~2.3:1 contrast */
+[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    background:#1F242B !important;
+    color:var(--amber) !important;
+    font-size:13px;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+    background:#2E353E !important;
+}
+[data-testid="stSidebar"] [data-testid="stIconMaterial"] {
+    color:var(--paper) !important;
+}
 [data-testid="stSidebar"] blockquote {
     border-left:3px solid var(--amber);
     padding-left:10px;
@@ -518,12 +538,33 @@ div[class*="st-key-site_id"] input {
 [data-testid="stSidebar"] code {
     background:#2E353E;
     color:var(--amber);
+    font-size:13px;
 }
-[data-testid="stSidebar"] [data-baseweb="tab"] {
+[data-testid="stSidebar"] [data-testid="stTab"] {
     font-family:var(--display);
-    font-size:12px;
-    letter-spacing:0.10em;
+    font-size:13px;
+    letter-spacing:0.08em;
     text-transform:uppercase;
+    color:var(--paper);
+}
+[data-testid="stSidebar"] [role="tablist"] {
+    border-bottom:1px solid #2E353E;
+    /* four tabs overflow the narrow rail; wrap instead of scrolling so no
+       pale scrollbar sits on the dark panel */
+    flex-wrap:wrap;
+    overflow-x:visible;
+    row-gap:2px;
+}
+[data-testid="stSidebar"] [role="tablist"]::-webkit-scrollbar {
+    height:4px;
+    background:#1F242B;
+}
+[data-testid="stSidebar"] [role="tablist"]::-webkit-scrollbar-thumb {
+    background:#2E353E;
+}
+/* active-tab indicator ships as Streamlit red (#FF4B4B); bring it on-palette */
+[data-testid="stTab"] > div:not([data-testid]) {
+    background-color:var(--amber) !important;
 }
 .side-brand {
     font-family:var(--display);
@@ -536,7 +577,7 @@ div[class*="st-key-site_id"] input {
 }
 .side-sub {
     font-family:var(--mono);
-    font-size:10px;
+    font-size:12px;
     letter-spacing:0.16em;
     text-transform:uppercase;
     color:#8A8F97;
@@ -555,7 +596,7 @@ div[class*="st-key-site_id"] input {
 }
 .scan-status {
     font-family:var(--mono);
-    font-size:12px;
+    font-size:13px;
     letter-spacing:0.01em;
     color:var(--muted);
 }
@@ -620,7 +661,7 @@ with st.sidebar:
             st.markdown("""
             **Claude Sonnet 4.0**
 
-            - Vision-capable large language model
+            - Vision capable large language model
             - Optimized for structured reasoning and safety analysis
             - Strong performance on image understanding + text generation
             """)
@@ -636,7 +677,7 @@ with st.sidebar:
             their **context window**, input size, and output capacity.
 
             ### Context Window
-            - **Claude Sonnet 4.0** supports a **200,000-token context window**
+            - **Claude Sonnet 4.0** supports a **200,000 token context window**
             - Tokens include:
                 - Image content
                 - Prompt instructions
@@ -669,16 +710,16 @@ with st.sidebar:
         # ------------------------------
         with tab_fn:
             st.markdown("""
-            This application uses **Snowflake Cortex AI SQL** for end-to-end image-based safety analysis:
+            This application uses **Snowflake Cortex AI SQL** for end to end image based safety analysis:
 
             **`AI_FILTER()`**
             - Early screening to detect whether an image contains potential safety hazards
-            - Filters out non-actionable images to **avoid unnecessary AI processing**
+            - Filters out non actionable images to **avoid unnecessary AI processing**
             - Improves performance and cost efficiency at scale
 
             **`AI_CLASSIFY()`**
-            - Multi-label **hazard category classification** per image
-            - Identifies real-world site hazards (e.g., fall risk, PPE, electrical, trip hazards)
+            - Multi label **hazard category classification** per image
+            - Identifies real world site hazards (e.g., fall risk, PPE, electrical, trip hazards)
             - Produces structured outputs for aggregation and analytics
 
             **`AI_COMPLETE()`**
@@ -694,7 +735,7 @@ with st.sidebar:
         with tab_sev:
             st.markdown("""
             Risk **severity levels** are derived deterministically from the
-            AI-generated **risk score (0–10)** to ensure consistency and transparency.
+            AI generated **risk score (0–10)** to ensure consistency and transparency.
 
             ### Severity Mapping Logic
             - **Low Risk:** score **< 4**
@@ -893,7 +934,7 @@ def hazard_bar_chart(df, cat_col, val_col, cat_title, val_title, colour=None):
         baseline="middle",
         dy=-9,
         font="Inter",
-        fontSize=12,
+        fontSize=13,
         color=INK
     ).encode(x=alt.value(0), text=alt.Text(f"{cat_col}:N"))
 
@@ -903,7 +944,7 @@ def hazard_bar_chart(df, cat_col, val_col, cat_title, val_title, colour=None):
         dx=6,
         dy=9,
         font="Space Mono",
-        fontSize=11,
+        fontSize=13,
         fontWeight=700,
         color=INK
     ).encode(x=x_enc, text=alt.Text(f"{val_col}:Q"))
@@ -1118,7 +1159,7 @@ if analyze_btn:
                 "detected_hazards": None,
                 "recommended_actions": None,
                 "risk_explanation": (
-                    "This image was automatically classified as non-actionable by the AI safety filter. "
+                    "This image was automatically classified as non actionable by the AI safety filter. "
                     "No unsafe conditions or hazards were detected."
                 ),
                 "has_potential_hazard": False
@@ -1232,7 +1273,7 @@ if results:
         plate(
             "Analysis complete",
             f'<span class="plate-metric">{len(results)}</span>'
-            f'image(s) processed for site <span class="mono">{site_id}</span>',
+            f'image(s) processed for site <strong class="mono">{site_id}</strong>',
             kind="ink",
             swatch=AMBER
         ),
@@ -1347,8 +1388,9 @@ if results:
             st.markdown(
                 plate(
                     "High site risk detected",
-                    "Notification automatically sent to Safety Manager<br/>"
-                    f'<span class="mono">{SAFETY_MANAGER_NAME} · {SAFETY_MANAGER_EMAIL}</span>',
+                    "Notification automatically sent to <strong>Safety Manager</strong><br/>"
+                    f'<strong class="mono">{SAFETY_MANAGER_NAME}</strong>'
+                    f'<span class="mono"> · {SAFETY_MANAGER_EMAIL}</span>',
                     kind="alert"
                 ),
                 unsafe_allow_html=True
@@ -1445,9 +1487,10 @@ if results:
             "<div class='sec-title-small'>Overall Site Risk</div>",
             unsafe_allow_html=True
         )
-        st.markdown(
-            f"""
-<div class="card-plain">
+        with st.container(border=True):
+            st.markdown(
+                f"""
+<div>
 <div style="display:flex; align-items:baseline; gap:10px;">
 <span class="score-big" style="color:{risk_color};">{round(weighted_score, 1)}</span>
 <span class="score-denom">/ 10</span>
@@ -1455,21 +1498,23 @@ if results:
 <div class="sec-title-small" style="margin:6px 0 16px 0; color:{MUTED};">Weighted Site Risk Score</div>
 {risk_meter(weighted_score)}
 <div style="display:flex; justify-content:space-between; margin-top:8px;
-font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.08em; color:{MUTED};">
-<span>0</span><span>HIGH-RISK THRESHOLD 7.0</span><span>10</span>
+font-family:'Space Mono',monospace; font-size:12px; letter-spacing:0.08em; color:{MUTED};">
+<span>0</span><span>10</span>
 </div>
+<div style="margin-top:4px; font-family:'Space Mono',monospace; font-size:12px;
+letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
 <div style="margin-top:18px; padding-top:14px; border-top:1px solid {RULE};">
 {severity_segments(site_severity, width="100%")}
-<div style="font-size:13px; line-height:1.55; color:{INK}; margin-top:10px;">{risk_note}</div>
+<div style="font-size:14px; line-height:1.55; color:{INK}; margin-top:10px;">{risk_note}</div>
 </div>
 </div>
 """,
-            unsafe_allow_html=True
-        )
+                unsafe_allow_html=True
+            )
 
     with col2:
         st.markdown(
-            "<div class='sec-title-small'>Hazards This Inspection</div>",
+            "<div class='sec-title-small'>Hazards In This Inspection</div>",
             unsafe_allow_html=True
         )
 
@@ -1494,9 +1539,12 @@ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.08em; color
                 hazard_df, "HAZARD_CATEGORY", "IMAGE_COUNT", "Hazard", "Images"
             )
 
-            # theme=None keeps Streamlit's default chart theme from overriding
-            # the fonts and colours configured above
-            st.altair_chart(hazard_chart, use_container_width=True, theme=None)
+            # same bordered container as the sibling columns so the three read
+            # as one group rather than two cards and a floating chart
+            with st.container(border=True):
+                # theme=None keeps Streamlit's default chart theme from
+                # overriding the fonts and colours configured above
+                st.altair_chart(hazard_chart, use_container_width=True, theme=None)
 
     with col3:
         st.markdown(
@@ -1520,34 +1568,33 @@ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.08em; color
             action_lines = parse_bullet_lines(prioritized_actions)
             actions_html = "".join(f"<li>{line}</li>" for line in action_lines)
 
-            st.markdown(
-                f"""
-                <div class="card">
+            with st.container(border=True):
+                st.markdown(
+                    f"""
                     <ul class="rank-list">
                         {actions_html}
                     </ul>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            # --------------------------------------------------
-            # CORRECTIVE ACTIONS CHECKLIST EXPORT (CSV)
-            # --------------------------------------------------
-            checklist_df = build_corrective_actions_checklist(results)
-
-            if not checklist_df.empty:
-                csv_data = checklist_df.to_csv(index=False)
-
-                st.download_button(
-                    label="⬇ Corrective Actions Checklist (CSV)",
-                    data=csv_data,
-                    file_name=f"{site_id}_corrective_actions_checklist.csv",
-                    mime="text/csv",
-                    use_container_width=True
+                    """,
+                    unsafe_allow_html=True
                 )
-            else:
-                st.info("No corrective actions available to generate a checklist.")
+
+                # ----------------------------------------------
+                # CORRECTIVE ACTIONS CHECKLIST EXPORT (CSV)
+                # ----------------------------------------------
+                checklist_df = build_corrective_actions_checklist(results)
+
+                if not checklist_df.empty:
+                    csv_data = checklist_df.to_csv(index=False)
+
+                    st.download_button(
+                        label="Corrective Actions Checklist (CSV)",
+                        data=csv_data,
+                        file_name=f"{site_id}_corrective_actions_checklist.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                else:
+                    st.info("No corrective actions available to generate a checklist.")
 
     # --------------------------------------------------
     # SECTION: PER-IMAGE RESULT CARDS
@@ -1597,7 +1644,7 @@ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.08em; color
                 st.markdown(
                     f"""
                     <div style="text-align:right;">
-                        <span class="score-denom">Risk Score</span>
+                        <span class="score-label">Risk Score</span>
                         <span class="score-badge" style="color:{sev_fg};">
                             {item['score']}<span class="score-denom">/10</span>
                         </span>
