@@ -29,155 +29,579 @@ st.set_page_config(
     layout="wide"
 )
 
+# --------------------------------------------------
+# DESIGN TOKENS
+# --------------------------------------------------
+INK = "#161A1F"
+AMBER = "#F7A600"
+PAPER = "#FAF9F5"
+RED = "#D64545"
+GREEN = "#3C8F5C"
+
+SEVERITY_TOKENS = {
+    "Low":    {"fg": GREEN, "bg": "#EAF3EC", "icon": "🟢"},
+    "Medium": {"fg": AMBER, "bg": "#FDF2DC", "icon": "🟡"},
+    "High":   {"fg": RED,   "bg": "#FAEAEA", "icon": "🔴"},
+}
+
+# --------------------------------------------------
+# GLOBAL STYLE
+# Palette : ink / safety amber / paper / alert red / green
+# Type    : Barlow Condensed (display) + Inter (body) + IBM Plex Mono (numerals)
+# Motif   : diagonal hazard stripe -> scan progress + high-severity cards ONLY
+# --------------------------------------------------
 st.markdown("""
 <style>
-/* App Header Wrapper */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root {
+    --ink:#161A1F;
+    --amber:#F7A600;
+    --paper:#FAF9F5;
+    --red:#D64545;
+    --green:#3C8F5C;
+    --rule:#E3DFD5;
+    --muted:#6B6B63;
+    --display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+    --body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+}
+
+/* ---------- surface ---------- */
+.stApp,
+[data-testid="stAppViewContainer"] {
+    background:var(--paper);
+}
+html, body, [data-testid="stAppViewContainer"] * {
+    font-family:var(--body);
+}
+/* keep Streamlit's ligature icon font — the rule above would otherwise
+   render icons as their literal names (e.g. "keyboard_arrow_right") */
+[data-testid="stIconMaterial"],
+span[data-testid="stIconMaterial"],
+.material-symbols-rounded,
+.material-symbols-outlined {
+    font-family:'Material Symbols Rounded','Material Symbols Outlined' !important;
+}
+code, kbd, pre, samp { font-family:var(--mono); }
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stAppViewContainer"] label {
+    color:var(--ink);
+}
+
+/* ---------- hazard stripe motif (2 uses only) ---------- */
+
+/* (a) scan / analysis progress indicator */
+[data-testid="stProgressBarTrack"] > div,
+.stProgress > div > div > div > div {
+    background-image:repeating-linear-gradient(
+        45deg,
+        #F7A600 0 10px,
+        #161A1F 10px 20px
+    ) !important;
+    background-color:#F7A600 !important;
+    background-size:28px 28px;
+    animation:stripe-run 0.9s linear infinite;
+}
+[data-testid="stProgressBarTrack"] {
+    background-color:#E3DFD5 !important;
+    border-radius:999px;
+}
+@keyframes stripe-run {
+    from { background-position:0 0; }
+    to   { background-position:28px 0; }
+}
+
+/* (b) border accent on high-severity result cards */
+.stripe-accent {
+    height:6px;
+    width:100%;
+    border-radius:3px;
+    margin:0 0 12px 0;
+    background-image:repeating-linear-gradient(
+        45deg,
+        var(--amber) 0 10px,
+        var(--ink) 10px 20px
+    );
+}
+
+/* ---------- header ---------- */
 .app-header {
-    text-align: center;
-    margin: 32px 0 24px 0;
+    padding:26px 0 18px 0;
+    border-bottom:2px solid var(--ink);
+    margin-bottom:26px;
 }
-
-/* App Title */
+.app-eyebrow {
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+}
 .app-title {
-    font-size: 50px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: #111827;
-    margin-bottom: 8px;
+    font-family:var(--display);
+    font-size:62px;
+    font-weight:700;
+    line-height:0.98;
+    letter-spacing:0.005em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin:0 0 10px 0;
 }
-
-/* App Caption */
+.app-title .amber { color:var(--amber); }
 .app-caption {
-    font-size: 14px;
-    color: #6b7280;
-    max-width: 720px;
-    margin: 0 auto;
-    line-height: 1.6;
+    font-size:14px;
+    color:var(--muted);
+    max-width:680px;
+    line-height:1.6;
 }
 
-/* Small section headings (Risk Severity, Risk Score, Hazard Categories) */
-.section-title-small {
-    font-size: 20px;
-    font-weight: 700;
-    margin: 12px 0 8px 0;
+/* ---------- section headings ---------- */
+.sec-title {
+    font-family:var(--display);
+    font-size:30px;
+    font-weight:700;
+    letter-spacing:0.02em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin:8px 0 4px 0;
+}
+.sec-rule {
+    height:3px;
+    width:56px;
+    background:var(--amber);
+    margin-bottom:16px;
+}
+.sec-title-small {
+    font-family:var(--display);
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin:0 0 10px 0;
+}
+.field-label {
+    font-family:var(--display);
+    font-size:17px;
+    font-weight:600;
+    letter-spacing:0.09em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin:0 0 4px 0;
 }
 
-/* Medium section headings (Detected Hazards, Recommended Actions) */
-.section-title-medium {
-    font-size: 26px;
-    font-weight: 700;
-    margin: 20px 0 12px 0;
+/* ---------- Site ID field : condensed display face ---------- */
+.st-key-site_id input,
+div[class*="st-key-site_id"] input {
+    font-family:var(--display) !important;
+    font-size:22px !important;
+    font-weight:600 !important;
+    letter-spacing:0.08em !important;
+    text-transform:uppercase;
+    color:var(--ink) !important;
 }
+[data-testid="stTextInput"] input {
+    background:#FFFFFF;
+    border-radius:2px;
+    border:1px solid var(--rule);
+}
+[data-testid="stTextInput"] input:focus {
+    border-color:var(--amber);
+    box-shadow:0 0 0 2px rgba(247,166,0,0.25);
+}
+
+/* ---------- cards ---------- */
+.card {
+    background:#FFFFFF;
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:18px;
+    margin-bottom:14px;
+}
+.card-flat {
+    background:#F3F1EA;
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:16px;
+}
+
+/* ---------- numerals ---------- */
+.mono { font-family:var(--mono); }
+.score-big {
+    font-family:var(--mono);
+    font-size:40px;
+    font-weight:600;
+    line-height:1;
+    letter-spacing:-0.02em;
+}
+.score-badge {
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:600;
+    line-height:1;
+    padding:10px 0 4px 0;
+    display:block;
+}
+.score-denom {
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:0.06em;
+}
+.img-id {
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.04em;
+    color:var(--muted);
+    word-break:break-all;
+}
+
+/* ---------- chips + tags ---------- */
+.chip {
+    display:inline-block;
+    font-family:var(--display);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+    padding:4px 12px;
+    border-radius:2px;
+}
+.tag {
+    display:inline-block;
+    font-size:12px;
+    font-weight:500;
+    color:var(--ink);
+    background:#F3F1EA;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:3px 9px;
+    margin:0 6px 6px 0;
+}
+.tag-clear {
+    background:#EAF3EC;
+    border-color:#C5DFCC;
+    color:var(--green);
+    font-weight:600;
+}
+
+/* ---------- callouts ---------- */
+.callout {
+    border-left:4px solid var(--amber);
+    background:#FDF2DC;
+    padding:14px 16px;
+    border-radius:2px;
+    font-size:14px;
+    color:var(--ink);
+}
+.callout-red {
+    border-left-color:var(--red);
+    background:#FAEAEA;
+}
+.callout-green {
+    border-left-color:var(--green);
+    background:#EAF3EC;
+}
+.callout-ink {
+    border-left-color:var(--ink);
+    background:#F3F1EA;
+}
+
+/* ---------- lists ---------- */
+.clean-list { margin:0; padding-left:18px; line-height:1.7; font-size:14px; }
+.clean-list li { margin-bottom:6px; }
+.rank-list { margin:0; padding-left:0; list-style:none; counter-reset:rank; }
+.rank-list li {
+    counter-increment:rank;
+    position:relative;
+    padding-left:34px;
+    margin-bottom:12px;
+    font-size:14px;
+    line-height:1.55;
+}
+.rank-list li::before {
+    content:counter(rank);
+    position:absolute;
+    left:0; top:0;
+    width:24px; height:24px;
+    background:var(--amber);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:13px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:2px;
+}
+
+/* ---------- buttons ---------- */
+.stButton > button,
+.stDownloadButton > button {
+    font-family:var(--display);
+    font-size:17px;
+    font-weight:600;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+    border-radius:2px;
+    border:1px solid var(--ink);
+    background:#FFFFFF;
+    color:var(--ink);
+    transition:transform 0.06s ease;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    border-color:var(--amber);
+    color:var(--ink);
+    background:#FDF2DC;
+}
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+    background:var(--amber);
+    color:var(--ink);
+    border:1px solid var(--ink);
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+    background:var(--ink);
+    color:var(--amber);
+}
+.stButton > button:active,
+.stDownloadButton > button:active { transform:translateY(1px); }
+/* button label lives in an inner <p>; make it follow the button's color
+   so hover/disabled states never go ink-on-ink */
+.stButton > button p,
+.stDownloadButton > button p {
+    color:inherit !important;
+    font-family:inherit !important;
+    font-size:inherit !important;
+    letter-spacing:inherit !important;
+}
+
+.dl-link {
+    display:block;
+    width:100%;
+    text-align:center;
+    background:var(--amber);
+    color:var(--ink) !important;
+    border:1px solid var(--ink);
+    padding:10px;
+    border-radius:2px;
+    font-family:var(--display);
+    font-size:17px;
+    font-weight:600;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+    text-decoration:none;
+    cursor:pointer;
+}
+.dl-link:hover { background:var(--ink); color:var(--amber) !important; }
+
+/* ---------- expanders ---------- */
+[data-testid="stExpander"] {
+    border:1px solid var(--rule);
+    border-radius:4px;
+    background:#FFFFFF;
+}
+[data-testid="stExpander"] summary {
+    font-family:var(--display);
+    font-size:16px;
+    font-weight:600;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+}
+
+/* ---------- containers ---------- */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius:4px;
+}
+
+/* ---------- sidebar : ink panel ---------- */
+[data-testid="stSidebar"] {
+    background:var(--ink);
+    border-right:3px solid var(--amber);
+}
+[data-testid="stSidebar"] *,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color:var(--paper);
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    background:#1F242B;
+    border:1px solid #2E353E;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary { color:var(--amber); }
+[data-testid="stSidebar"] blockquote {
+    border-left:3px solid var(--amber);
+    padding-left:10px;
+    color:#CFCBC1;
+}
+[data-testid="stSidebar"] code {
+    background:#2E353E;
+    color:var(--amber);
+}
+[data-testid="stSidebar"] [data-baseweb="tab"] {
+    font-family:var(--display);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+}
+.side-brand {
+    font-family:var(--display);
+    font-size:21px;
+    font-weight:700;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+    color:var(--paper);
+    margin-bottom:2px;
+}
+.side-sub {
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:#8A8F97;
+    margin-bottom:14px;
+}
+
+/* ---------- scan progress block ---------- */
+.scan-label {
+    font-family:var(--display);
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:0.10em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin-bottom:2px;
+}
+.scan-status {
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:0.03em;
+    color:var(--muted);
+}
+.scan-status b { color:var(--amber); font-weight:600; }
+
+/* ---------- misc ---------- */
+[data-testid="stDataFrame"] { border:1px solid var(--rule); border-radius:4px; }
+hr { border-color:var(--rule); }
 </style>
 """, unsafe_allow_html=True)
 
-SECTION_CARD_GREY = """
-    background:#f9fafb;
-    padding:14px;
-    border-radius:12px;
-    border:1px solid #e5e7eb;
-    margin-bottom:12px;
-"""
-
-SECTION_CARD_BLUE = """
-    background:#f0f6ff;
-    padding:18px;
-    border-radius:14px;
-    border:1px solid #dbeafe;
-    margin-bottom:16px;
-"""
 
 # --------------------------------------------------
 # SECTION: SIDE-BAR
+# Single icon-triggered panel, collapsed by default.
+# (Streamlit forbids nested expanders -> tabs inside.)
 # --------------------------------------------------
 with st.sidebar:
-    st.markdown("## ⚙️ Model & System Info")
+    st.markdown(
+        """
+        <div class="side-brand">Site Safety</div>
+        <div class="side-sub">AISQL Inspection</div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    with st.expander("🤖 Model Used", expanded=True):
+    with st.expander("ℹ️", expanded=False):
+        tab_model, tab_limits, tab_fn, tab_sev = st.tabs(
+            ["Model", "Limits", "AI SQL", "Severity"]
+        )
+
+        # ------------------------------
+        # MODEL USED
+        # ------------------------------
+        with tab_model:
             st.markdown("""
             **Claude Sonnet 4.0**
-    
+
             - Vision-capable large language model
             - Optimized for structured reasoning and safety analysis
             - Strong performance on image understanding + text generation
             """)
-    
-    st.caption("🔒 Model fixed to Claude Sonnet 4.0 for consistency and auditability")
 
-    # ------------------------------
-    # MODEL LIMITATIONS
-    # ------------------------------
-    with st.expander("⚠️ Model Limitations"):
-        st.markdown("""
-        All models available in **Snowflake Cortex** have limitations related to
-        their **context window**, input size, and output capacity.
-    
-        ### Context Window
-        - **Claude Sonnet 4.0** supports a **200,000-token context window**
-        - Tokens include:
-            - Image content
-            - Prompt instructions
-            - Generated output
-        - Inputs exceeding this limit may result in **errors**
-        - Outputs exceeding the limit may be **truncated**
-    
-        ### Image Processing Limits
-        - Supported file types: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`
-        - **Maximum file size per image:** ~**3.75 MB**
-        - **Maximum images per prompt:** up to **20**
-        - Images must be **smaller than 8000 × 8000 pixels**
-        - Limits apply **per individual image**
-    
-        ### Model Behavior
-        - Image understanding is **probabilistic**, not deterministic
-        - Results depend on:
-            - Image clarity
-            - Lighting conditions
-            - Camera angle and occlusion
-        - The model **cannot verify information outside the visible image**
-        - Risk scores and severity levels are **estimates**, not compliance decisions
-    
-        > This AI system is designed to **assist** safety assessments  
-        > and should **not replace certified safety inspections**.
-        """)
+            st.caption("🔒 Model fixed to Claude Sonnet 4.0 for consistency and auditability")
 
-    # ------------------------------
-    # AISQL FUNCTIONS USED
-    # ------------------------------
-    with st.expander("🧠 AI SQL Functions Used"):
-        st.markdown("""
-        This application uses **Snowflake Cortex AI SQL** for end-to-end image-based safety analysis:
-    
-        **`AI_FILTER()`**
-        - Early screening to detect whether an image contains potential safety hazards  
-        - Filters out non-actionable images to **avoid unnecessary AI processing**  
-        - Improves performance and cost efficiency at scale  
-    
-        **`AI_CLASSIFY()`**
-        - Multi-label **hazard category classification** per image  
-        - Identifies real-world site hazards (e.g., fall risk, PPE, electrical, trip hazards)  
-        - Produces structured outputs for aggregation and analytics  
-    
-        **`AI_COMPLETE()`**
-        - Risk score calculation (0–10)  
-        - Hazard explanations based on visible conditions  
-        - Corrective action recommendations  
-        - Site-wide **Top 3 prioritized corrective actions**
-        """)
+        # ------------------------------
+        # MODEL LIMITATIONS
+        # ------------------------------
+        with tab_limits:
+            st.markdown("""
+            All models available in **Snowflake Cortex** have limitations related to
+            their **context window**, input size, and output capacity.
 
-    # ------------------------------
-    # RISK SEVERITY LOGIC
-    # ------------------------------
-    with st.expander("⚖️ Risk Severity Determination"):
-        st.markdown("""
-        Risk **severity levels** are derived deterministically from the
-        AI-generated **risk score (0–10)** to ensure consistency and transparency.
-        
-        ### Severity Mapping Logic
-        - **Low Risk:** score **< 4**
-        - **Medium Risk:** score **≥ 4 and < 7**
-        - **High Risk:** score **≥ 7**
-        """)
+            ### Context Window
+            - **Claude Sonnet 4.0** supports a **200,000-token context window**
+            - Tokens include:
+                - Image content
+                - Prompt instructions
+                - Generated output
+            - Inputs exceeding this limit may result in **errors**
+            - Outputs exceeding the limit may be **truncated**
+
+            ### Image Processing Limits
+            - Supported file types: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`
+            - **Maximum file size per image:** ~**3.75 MB**
+            - **Maximum images per prompt:** up to **20**
+            - Images must be **smaller than 8000 × 8000 pixels**
+            - Limits apply **per individual image**
+
+            ### Model Behavior
+            - Image understanding is **probabilistic**, not deterministic
+            - Results depend on:
+                - Image clarity
+                - Lighting conditions
+                - Camera angle and occlusion
+            - The model **cannot verify information outside the visible image**
+            - Risk scores and severity levels are **estimates**, not compliance decisions
+
+            > This AI system is designed to **assist** safety assessments
+            > and should **not replace certified safety inspections**.
+            """)
+
+        # ------------------------------
+        # AISQL FUNCTIONS USED
+        # ------------------------------
+        with tab_fn:
+            st.markdown("""
+            This application uses **Snowflake Cortex AI SQL** for end-to-end image-based safety analysis:
+
+            **`AI_FILTER()`**
+            - Early screening to detect whether an image contains potential safety hazards
+            - Filters out non-actionable images to **avoid unnecessary AI processing**
+            - Improves performance and cost efficiency at scale
+
+            **`AI_CLASSIFY()`**
+            - Multi-label **hazard category classification** per image
+            - Identifies real-world site hazards (e.g., fall risk, PPE, electrical, trip hazards)
+            - Produces structured outputs for aggregation and analytics
+
+            **`AI_COMPLETE()`**
+            - Risk score calculation (0–10)
+            - Hazard explanations based on visible conditions
+            - Corrective action recommendations
+            - Site-wide **Top 3 prioritized corrective actions**
+            """)
+
+        # ------------------------------
+        # RISK SEVERITY LOGIC
+        # ------------------------------
+        with tab_sev:
+            st.markdown("""
+            Risk **severity levels** are derived deterministically from the
+            AI-generated **risk score (0–10)** to ensure consistency and transparency.
+
+            ### Severity Mapping Logic
+            - **Low Risk:** score **< 4**
+            - **Medium Risk:** score **≥ 4 and < 7**
+            - **High Risk:** score **≥ 7**
+            """)
 
 
 # --------------------------------------------------
@@ -185,37 +609,52 @@ with st.sidebar:
 # --------------------------------------------------
 st.markdown("""
 <div class="app-header">
+    <div class="app-eyebrow">Snowflake Cortex AISQL</div>
     <div class="app-title">
-        🦺 Site Safety Hazard & Risk Inspection
+        Site Safety<br/>Hazard &amp; <span class="amber">Risk</span> Inspection
     </div>
     <div class="app-caption">
-        Detect safety hazards, calculate risk, and recommend corrective actions using Snowflake Cortex AISQL
+        Detect safety hazards, calculate risk, and recommend corrective actions
+        from site inspection imagery.
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-st.divider()
-
 # --------------------------------------------------
 # SECTION: INPUT
 # --------------------------------------------------
-st.subheader("Site Information")
-
-site_id = st.text_input("Site ID", value="SITE_A")
-
-uploaded_files = st.file_uploader(
-    "Upload site inspection images",
-    type=["jpg", "jpeg", "png"],
-    accept_multiple_files=True
+st.markdown(
+    '<div class="sec-title">Site Information</div><div class="sec-rule"></div>',
+    unsafe_allow_html=True
 )
 
+in_col_id, in_col_files = st.columns([1, 2])
+
+with in_col_id:
+    st.markdown('<div class="field-label">Site ID</div>', unsafe_allow_html=True)
+    site_id = st.text_input(
+        "Site ID",
+        value="SITE_A",
+        key="site_id",
+        label_visibility="collapsed"
+    )
+
+with in_col_files:
+    st.markdown('<div class="field-label">Inspection Images</div>', unsafe_allow_html=True)
+    uploaded_files = st.file_uploader(
+        "Upload site inspection images",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True,
+        label_visibility="collapsed"
+    )
+
 analyze_btn = st.button(
-    "🔍 Analyze Site",
+    "Analyze Site",
     use_container_width=True,
     type="primary"
 )
 
-st.divider()
+st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
 
 # --------------------------------------------------
 # SESSION STATE – SITE HISTORY
@@ -238,7 +677,7 @@ def upload_image_to_stage(uploaded_file):
     ext = uploaded_file.name.split(".")[-1].lower()
     file_name = f"{image_id}.{ext}"
 
-    stage_path = f"@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG/{file_name}"
+    stage_path = f"@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG/{file_name}"
 
     session.file.put_stream(
         BytesIO(uploaded_file.getvalue()),
@@ -272,19 +711,14 @@ def severity_from_score(score):
 
 
 def severity_style(severity):
-    if severity == "High":
-        return "🔴", "#fdecea"
-    elif severity == "Medium":
-        return "🟡", "#fff8db"
-    else:
-        return "🟢", "#edf7ed"
+    token = SEVERITY_TOKENS.get(severity, SEVERITY_TOKENS["Low"])
+    return token["icon"], token["bg"]
 
 def severity_color(sev):
-    return {
-        "Low": "#16a34a",
-        "Medium": "#f59e0b",
-        "High": "#dc2626"
-    }.get(sev, "#6b7280")
+    return SEVERITY_TOKENS.get(sev, {}).get("fg", INK)
+
+def severity_bg(sev):
+    return SEVERITY_TOKENS.get(sev, {}).get("bg", "#F3F1EA")
 
 def bullets_to_html(text):
     """
@@ -312,6 +746,24 @@ def bullets_to_html(text):
         lines.append(f"- {line}")
 
     return "\n".join(lines) if lines else "- No actions identified."
+
+def parse_bullet_lines(text):
+    """
+    Normalize AI bullet output into display lines,
+    preserving bold markers as <strong>.
+    """
+    raw = str(text).replace("\\n", "\n").strip().strip('"').strip("'")
+
+    lines = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        line = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", line)
+        line = line.lstrip("-•0123456789. ").strip()
+        lines.append(line)
+
+    return lines
 
 def build_corrective_actions_checklist(results):
     """
@@ -374,7 +826,7 @@ HAZARD_EMOJI = {
 # --------------------------------------------------
 # MAIN ANALYSIS LOGIC
 # --------------------------------------------------
-results = st.session_state.analysis_results 
+results = st.session_state.analysis_results
 
 if analyze_btn:
     if not site_id.strip():
@@ -387,55 +839,100 @@ if analyze_btn:
 
     results.clear()
 
-    with st.spinner("Analyzing site images..."):
-        for uploaded_file in uploaded_files:
-            file_name = upload_image_to_stage(uploaded_file)
+    # ------------------------------------------------------------------
+    # PER-IMAGE PROGRESS
+    # Three observable steps per image: stage upload, AI_FILTER, then the
+    # combined AI_CLASSIFY + AI_COMPLETE statement.
+    # ------------------------------------------------------------------
+    total_images = len(uploaded_files)
+    total_steps = total_images * 3
+    step = 0
 
-            # --------------------------------------------------
-            # AI_FILTER – Pre-check 
-            # --------------------------------------------------
-            filter_query = f"""
-            SELECT
-                AI_FILTER(
-                    'Does this image show any unsafe condition, safety hazard, or situation that could pose a risk to people or property?',
-                    TO_FILE('@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG','{file_name}')
-                ) AS has_potential_hazard
-            """
+    scan_box = st.empty()
+    with scan_box.container():
+        st.markdown('<div class="scan-label">Scanning Site</div>', unsafe_allow_html=True)
+        status_slot = st.empty()
+        progress_bar = st.progress(0.0)
 
-            filter_row = session.sql(filter_query).collect()[0]
-            has_potential_hazard = filter_row["HAS_POTENTIAL_HAZARD"]
+    def set_status(image_index, file_label, message):
+        status_slot.markdown(
+            f'<div class="scan-status">IMAGE {image_index}/{total_images} · '
+            f'{file_label} — <b>{message}</b></div>',
+            unsafe_allow_html=True
+        )
 
-            # --------------------------------------------------
-            # SHORT-CIRCUIT = NO HAZARDS DETECTED
-            # --------------------------------------------------
-            if not has_potential_hazard:
-                results.append({
-                    "image_name": uploaded_file.name,
-                    "image_bytes": uploaded_file.getvalue(),
-                    "score": 0,
-                    "severity": "Low",
-                    "hazard_categories": ["No Visible Hazard"],
-                    "detected_hazards": None,
-                    "recommended_actions": None,
-                    "risk_explanation": (
-                        "This image was automatically classified as non-actionable by the AI safety filter. "
-                        "No unsafe conditions or hazards were detected."
-                    ),
-                    "has_potential_hazard": False
-                })
-                continue
+    for image_index, uploaded_file in enumerate(uploaded_files, start=1):
+        set_status(image_index, uploaded_file.name, "Uploading to SAFETY_IMG_STG")
 
+        file_name = upload_image_to_stage(uploaded_file)
 
-            query = f"""
+        step += 1
+        progress_bar.progress(step / total_steps)
+
+        # --------------------------------------------------
+        # AI_FILTER – Pre-check
+        # --------------------------------------------------
+        set_status(image_index, uploaded_file.name, "AI_FILTER — screening for unsafe conditions")
+
+        filter_query = f"""
+        SELECT
+            AI_FILTER(
+                'Does this image show any unsafe condition, safety hazard, or situation that could pose a risk to people or property?',
+                TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
+            ) AS has_potential_hazard
+        """
+
+        filter_row = session.sql(filter_query).collect()[0]
+        has_potential_hazard = filter_row["HAS_POTENTIAL_HAZARD"]
+
+        step += 1
+        progress_bar.progress(step / total_steps)
+
+        # --------------------------------------------------
+        # SHORT-CIRCUIT = NO HAZARDS DETECTED
+        # --------------------------------------------------
+        if not has_potential_hazard:
+            set_status(
+                image_index,
+                uploaded_file.name,
+                "AI_FILTER — no hazard found, deep analysis skipped"
+            )
+
+            results.append({
+                "image_name": uploaded_file.name,
+                "image_bytes": uploaded_file.getvalue(),
+                "score": 0,
+                "severity": "Low",
+                "hazard_categories": ["No Visible Hazard"],
+                "detected_hazards": None,
+                "recommended_actions": None,
+                "risk_explanation": (
+                    "This image was automatically classified as non-actionable by the AI safety filter. "
+                    "No unsafe conditions or hazards were detected."
+                ),
+                "has_potential_hazard": False
+            })
+
+            step += 1
+            progress_bar.progress(step / total_steps)
+            continue
+
+        set_status(
+            image_index,
+            uploaded_file.name,
+            "AI_CLASSIFY + AI_COMPLETE — hazard categories, risk score, actions, explanation"
+        )
+
+        query = f"""
 SELECT
     AI_COMPLETE(
         'claude-4-sonnet',
         'Return ONLY a single integer risk score from 0 to 10.',
-        TO_FILE('@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG','{file_name}')
+        TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
     ) AS risk_score,
 
     AI_CLASSIFY(
-        TO_FILE('@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG','{file_name}'),
+        TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}'),
         [
             'Missing PPE','Fall Risk','Fire or Explosion Hazard',
             'Electrical Hazard','Trip or Slip Hazard',
@@ -459,7 +956,7 @@ SELECT
 - [Hazard 3]
 
 Do not include any introductory text. Bold keywords. Start directly with the first dash.',
-        TO_FILE('@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG','{file_name}')
+        TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
     ) AS detected_hazards,
 
     AI_COMPLETE(
@@ -470,7 +967,7 @@ Do not include any introductory text. Bold keywords. Start directly with the fir
 - [Action 3]
 
 Do not include any introductory text. Bold keywords. Start directly with the first dash.',
-        TO_FILE('@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG','{file_name}')
+        TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
     ) AS recommended_actions,
 
     AI_COMPLETE(
@@ -479,45 +976,64 @@ Do not include any introductory text. Bold keywords. Start directly with the fir
 Reference specific visible conditions and explain how they contribute
 to the level of risk. Keep the explanation factual, neutral, and
 appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
-        TO_FILE('@SNOWFLAKE_LEARNING_DB.PUBLIC.SAFETY_IMG_STG','{file_name}')
+        TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
     ) AS risk_explanation
 """
 
-            row = session.sql(query).collect()[0]
+        row = session.sql(query).collect()[0]
 
-            score = int(re.search(r"\d+", str(row["RISK_SCORE"])).group())
-            severity = severity_from_score(score)
+        score = int(re.search(r"\d+", str(row["RISK_SCORE"])).group())
+        severity = severity_from_score(score)
 
-            results.append({
-                "image_name": uploaded_file.name,
-                "image_bytes": uploaded_file.getvalue(),
-                "score": score,
-                "severity": severity,
-                "hazard_categories": extract_labels(row["HAZARD_CATEGORIES"]),
-                "detected_hazards": row["DETECTED_HAZARDS"],
-                "recommended_actions": row["RECOMMENDED_ACTIONS"],
-                "risk_explanation": (
-                    str(row["RISK_EXPLANATION"])
-                    .replace("\\n", " ")
-                    .replace('"', "")
-                    .replace("'", "")
-                    .strip()
-                ),
-                "has_potential_hazard": True
-            })
+        results.append({
+            "image_name": uploaded_file.name,
+            "image_bytes": uploaded_file.getvalue(),
+            "score": score,
+            "severity": severity,
+            "hazard_categories": extract_labels(row["HAZARD_CATEGORIES"]),
+            "detected_hazards": row["DETECTED_HAZARDS"],
+            "recommended_actions": row["RECOMMENDED_ACTIONS"],
+            "risk_explanation": (
+                str(row["RISK_EXPLANATION"])
+                .replace("\\n", " ")
+                .replace('"', "")
+                .replace("'", "")
+                .strip()
+            ),
+            "has_potential_hazard": True
+        })
+
+        step += 1
+        progress_bar.progress(step / total_steps)
+
+    progress_bar.progress(1.0)
+    scan_box.empty()
 
     st.session_state.analysis_results = results
 
 
 # --------------------------------------------------
-# SECTION: DISPLAY IMAGE ANALYSIS RESULTS
+# SECTION: RESULTS
 # --------------------------------------------------
 
 if results:
-    st.success(f"🎉 Site analysis complete – {len(results)} images processed")
+    st.markdown(
+        f"""
+        <div class="callout callout-ink" style="margin-bottom:22px;">
+            <span class="mono" style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#6B6B63;">
+                Analysis complete
+            </span><br/>
+            <span style="font-size:14px;">
+                <b>{len(results)}</b> image(s) processed for site
+                <b class="mono">{site_id}</b>
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     hazard_counter = Counter()
-    
+
     # --------------------------------------------------
     # BUILD HAZARD COUNTS
     # --------------------------------------------------
@@ -535,16 +1051,16 @@ if results:
     )
 
     # --------------------------------------------------
-    # PERSIST SITE RISK HISTORY
+    # PERSIST SITE HAZARD HISTORY
     # --------------------------------------------------
     inspection_ts = datetime.now(MY_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    
+
     for hazard, count in hazard_counter.items():
         if hazard == "No Visible Hazard":
             continue
-    
+
         session.sql(f"""
-            INSERT INTO SNOWFLAKE_LEARNING_DB.PUBLIC.SITE_HAZARD_HISTORY
+            INSERT INTO SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_HAZARD_HISTORY
             (
                 SITE_ID,
                 INSPECTION_TS,
@@ -559,236 +1075,29 @@ if results:
             )
         """).collect()
 
-
-    for idx, item in enumerate(results, start=1):
-        hazard_counter.update(item["hazard_categories"])
-
-        with st.expander(f"📸 Image {idx}: {item['image_name']}", expanded=True):
-
-            img_col, info_col = st.columns([2, 1])
-
-            with img_col:
-                st.image(item["image_bytes"], width=720)
-
-            with info_col:
-                icon, bg = severity_style(item["severity"])
-
-            
-                # --------------------------------------------------
-                # RISK SEVERITY
-                # --------------------------------------------------
-                st.markdown(
-                    f"""
-                    <div style="{SECTION_CARD_GREY}">
-                        <div class="section-title-small">Risk Severity</div>
-                        <div style="background:{bg}; padding:14px; border-radius:10px; font-weight:600;">
-                            {icon} {item['severity']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                # --------------------------------------------------
-                # RISK SCORE + EXPLANATION
-                # --------------------------------------------------
-                if not item["has_potential_hazard"]:
-                    risk_html = f"""
-                    <div style="background:#f9fafb; padding:16px; border-radius:12px; margin-bottom:16px;">
-                        <div style="font-size:15px; font-weight:700; margin-bottom:12px; color:#111827;">
-                            Risk Score (0–10)
-                        </div>
-                        <div style="background:#f0fdf4; padding:14px; border-radius:10px; font-weight:600; margin-bottom:8px;">
-                            🟢 {item['score']} / 10
-                        </div>
-                        <div style="padding-top:8px; border-top:1px solid #e5e7eb;">
-                            <div style="font-size:13px; font-weight:700; margin-bottom:4px; color:#166534;">
-                                🧠 Why this risk score?
-                            </div>
-                            <div style="font-size:13px; color:#374151; line-height:1.6;">
-                                {item['risk_explanation']}
-                            </div>
-                        </div>
-                    </div>
-                    """
-                else:
-                    risk_html = f"""
-                    <div style="background:#f9fafb; padding:16px; border-radius:12px; margin-bottom:16px;">
-                        <div style="font-size:15px; font-weight:700; margin-bottom:12px; color:#111827;">
-                            Risk Score (0–10)
-                        </div>
-                        <div style="background:#fff8db; padding:14px; border-radius:10px; font-weight:600; margin-bottom:8px;">
-                            🟡 {item['score']} / 10
-                        </div>
-                        <div style="padding-top:8px; border-top:1px solid #e5e7eb;">
-                            <div style="font-size:13px; font-weight:700; margin-bottom:4px; color:#4338ca;">
-                                🧠 Why this risk score?
-                            </div>
-                            <div style="font-size:13px; color:#374151; line-height:1.6;">
-                                {item['risk_explanation']}
-                            </div>
-                        </div>
-                    </div>
-                    """
-                st.markdown(risk_html, unsafe_allow_html=True)
-
-                # --------------------------------------------------
-                # HAZARD CATEGORIES
-                # --------------------------------------------------
-                if not item["has_potential_hazard"]:
-                    hazard_html = (
-                        "<li style='color:#16a34a; font-weight:600;'>"
-                        "✅ No hazards detected"
-                        "</li>"
-                    )
-                else:
-                    hazard_html = ""
-                    for c in item["hazard_categories"]:
-                        emoji = HAZARD_EMOJI.get(c, "⚠️")
-                        hazard_html += f"<li>{emoji} {c}</li>"
-                
-                st.markdown(
-                    f"""
-                    <div style="{SECTION_CARD_GREY}">
-                        <div class="section-title-small">Hazard Categories</div>
-                        <ul style="
-                            margin:0;
-                            padding-left:0;
-                            list-style:none;
-                            margin-top:8px;
-                        ">
-                            {hazard_html}
-                        </ul>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            # --------------------------------------------------
-            # DETECTED HAZARDS
-            # --------------------------------------------------
-            if not item["has_potential_hazard"]:
-                st.markdown(
-                    f"""
-                    <div style="{SECTION_CARD_BLUE}">
-                        <div class="section-title-medium">Detected Hazards</div>
-                        <div style="
-                            background:#f0fdf4;
-                            border:1px solid #bbf7d0;
-                            border-radius:10px;
-                            padding:14px;
-                            color:#166534;
-                            font-weight:600;
-                        ">
-                            ✅ No hazards detected in this image
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            else:
-                raw_hazards = str(item["detected_hazards"])
-                raw_hazards = raw_hazards.replace("\\n", "\n").strip().strip('"').strip("'")
-            
-                hazard_lines = []
-                for line in raw_hazards.splitlines():
-                    line = line.strip()
-                    if not line:
-                        continue
-                    line = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", line)
-                    line = line.lstrip("-• ").strip()
-                    hazard_lines.append(line)
-            
-                hazards_html = "".join(f"<li>{line}</li>" for line in hazard_lines)
-            
-                st.markdown(
-                    f"""
-                    <div style="{SECTION_CARD_BLUE}">
-                        <div class="section-title-medium">Detected Hazards</div>
-                        <ul style="margin:0; padding-left:18px; line-height:1.6;">
-                            {hazards_html}
-                        </ul>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-
-            # --------------------------------------------------
-            # RECOMMENDED ACTIONS
-            # --------------------------------------------------
-            if not item["has_potential_hazard"]:
-                st.markdown(
-                    f"""
-                    <div style="{SECTION_CARD_BLUE}">
-                        <div class="section-title-medium">Recommended Actions</div>
-                        <div style="
-                            background:#f0fdf4;
-                            border:1px solid #bbf7d0;
-                            border-radius:10px;
-                            padding:14px;
-                            color:#166534;
-                            font-weight:600;
-                        ">
-                            ✅ No corrective actions required for this image
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-            else:
-                raw_actions = str(item["recommended_actions"])
-                raw_actions = raw_actions.replace("\\n", "\n").strip().strip('"').strip("'")
-            
-                action_lines = []
-                for line in raw_actions.splitlines():
-                    line = line.strip()
-                    if not line:
-                        continue
-                    line = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", line)
-                    line = line.lstrip("-•0123456789. ").strip()
-                    action_lines.append(line)
-            
-                actions_html = "".join(f"<li>{line}</li>" for line in action_lines)
-            
-                st.markdown(
-                    f"""
-                    <div style="{SECTION_CARD_BLUE}">
-                        <div class="section-title-medium">Recommended Actions</div>
-                        <ul style="margin:0; padding-left:18px; line-height:1.6;">
-                            {actions_html}
-                        </ul>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
     # --------------------------------------------------
-    # SECTION: SITE RISK SUMMARY
+    # SITE-WIDE AGGREGATES
     # --------------------------------------------------
-    st.divider()
-    st.header("🏗️ Site Risk Summary")
-
     weights = {"Low": 1, "Medium": 2, "High": 3}
     weighted_score = sum(
         item["score"] * weights[item["severity"]] for item in results
     ) / sum(weights[item["severity"]] for item in results)
 
     site_severity = severity_from_score(weighted_score)
-    
+
 
     # --------------------------------------------------
     # AUTO EMAIL ALERT – SAFETY MANAGER
     # --------------------------------------------------
     SAFETY_MANAGER_NAME = "Rafi Hidayat"
     SAFETY_MANAGER_EMAIL = "rafi.hidayat@synogize.io"
-    
+
     # Prevent duplicate emails per run
     if "auto_email_sent" not in st.session_state:
         st.session_state.auto_email_sent = False
-    
+
     if site_severity == "High" and not st.session_state.auto_email_sent:
-    
+
         auto_email_body = f"""
     ⚠️ HIGH SITE RISK ALERT
     
@@ -810,9 +1119,9 @@ if results:
     This alert was automatically generated due to high site risk.
     Immediate review and mitigation is recommended.
     """
-    
+
         safe_auto_email_body = auto_email_body.replace("'", "''")
-    
+
         try:
             session.sql(
                 f"""
@@ -824,15 +1133,25 @@ if results:
                 )
                 """
             ).collect()
-    
+
             st.session_state.auto_email_sent = True
-    
+
             # UI feedback
-            st.warning(
-                f"⚠️ **High risk detected** – notification automatically sent to "
-                f"**Safety Manager ({SAFETY_MANAGER_NAME}: {SAFETY_MANAGER_EMAIL})**"
+            st.markdown(
+                f"""
+                <div class="callout callout-red" style="margin-bottom:18px;">
+                    <span class="mono" style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">
+                        High risk detected
+                    </span><br/>
+                    <span style="font-size:14px;">
+                        Notification automatically sent to Safety Manager
+                        (<b>{SAFETY_MANAGER_NAME}</b> · {SAFETY_MANAGER_EMAIL})
+                    </span>
+                </div>
+                """,
+                unsafe_allow_html=True
             )
-    
+
         except Exception as e:
             st.error("❌ Failed to send automated safety alert.")
             st.exception(e)
@@ -840,22 +1159,22 @@ if results:
     # --------------------------------------------------
     # PRIORITIZED CORRECTIVE ACTIONS
     # --------------------------------------------------
-    
+
     # Determine site-level hazard presence using AI_FILTER output (single source of truth)
     site_has_hazards = any(
         r.get("has_potential_hazard") for r in results
     )
-    
+
     prioritized_actions = None
-    
+
     if site_has_hazards:
-    
+
         # Build hazard frequency summary
         hazard_summary = ", ".join(
             f"{hazard} ({count})"
             for hazard, count in filtered_hazards
         )
-    
+
         # Collect ONLY recommended actions from actionable images
         all_actions_text = "\n".join(
             str(r["recommended_actions"])
@@ -863,10 +1182,10 @@ if results:
             if r.get("has_potential_hazard") is True
             and r.get("recommended_actions")
         )
-    
+
         # Only call AI if we actually have content
         if all_actions_text.strip():
-    
+
             prioritized_actions_query = f"""
             SELECT AI_COMPLETE(
                 'claude-4-sonnet',
@@ -890,38 +1209,29 @@ if results:
     Do not include any introductory text. Start directly with the first dash.'
             ) AS prioritized_actions
             """
-    
+
             prioritized_actions = session.sql(
                 prioritized_actions_query
             ).collect()[0]["PRIORITIZED_ACTIONS"]
-    
+
         else:
             prioritized_actions = None
 
     # --------------------------------------------------
-    # SITE RISK SUMMARY 3-COLUMN VISUAL LAYOUT
+    # SECTION: SITE RISK SUMMARY  (above per-image results)
     # --------------------------------------------------
+    st.markdown(
+        '<div class="sec-title">Site Risk Summary</div><div class="sec-rule"></div>',
+        unsafe_allow_html=True
+    )
+
     col1, col2, col3 = st.columns([1, 1.5, 1.5])
 
-    card_style = """
-        background-color:#f6f7f9;
-        padding:20px;
-        border-radius:12px;
-        height:100%;
-    """
-
     risk_pct = min(max(int((weighted_score / 10) * 100), 0), 100)
-    
-    if site_severity == "High":
-        risk_color = "#dc2626"   # red
-        card_bg = "#fef2f2"      # soft red
-    elif site_severity == "Medium":
-        risk_color = "#f59e0b"   # amber
-        card_bg = "#fffbeb"      # soft amber
-    else:
-        risk_color = "#16a34a"   # green
-        card_bg = "#f0fdf4"      # soft green
-    
+
+    risk_color = severity_color(site_severity)
+    card_bg = severity_bg(site_severity)
+
     threshold_pct = 70  # 7.0 / 10 threshold
 
     risk_note_map = {
@@ -929,238 +1239,239 @@ if results:
     "Medium": "Mitigation actions should be planned and closely monitored.",
     "Low": "Site risk is currently within acceptable limits."
     }
-    
+
     risk_note = risk_note_map.get(site_severity, "")
 
-    
+
     with col1:
-        st.markdown(f"<div style='{card_style}'>", unsafe_allow_html=True)
         st.markdown(
-            "<div class='section-title-small' style='text-align:center;'>Overall Site Risk</div>",
+            "<div class='sec-title-small'>Overall Site Risk</div>",
             unsafe_allow_html=True
         )
         components.html(
             f"""
-            <div style="
-                background:{card_bg};
-                padding:20px;
-                border-radius:14px;
-                height:100%;
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            ">
-                <div style="
+            <!-- non-blocking font load: a hanging/blocked font host must never
+                 delay first paint of this iframe (fallback stacks below) -->
+            <link rel="stylesheet" media="print" onload="this.media='all'"
+                  href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap"/>
+            <style>
+                * {{ box-sizing:border-box; }}
+                .gauge-wrap {{
+                    background:{card_bg};
+                    border:1px solid #E3DFD5;
+                    border-radius:4px;
+                    padding:18px;
+                    font-family:'Inter',system-ui,sans-serif;
+                }}
+                .sev-row {{
                     display:flex;
                     align-items:center;
                     gap:10px;
-                    margin:6px 0;
-                ">
-                    <div style="
-                        width:35px;
-                        height:35px;
-                        background:{risk_color};
-                        border-radius:50%;
-                        flex-shrink:0;
-                    "></div>
-                
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="
-                            width:14px;
-                            height:14px;
-                            background:{risk_color};
-                            border-radius:50%;
-                            display:inline-block;
-                        "></span>
-                    
-                        <h2 class="severity-label" style="margin:0;">
-                            {site_severity} Risk
-                        </h2>
-                    </div>
-
-                </div>
-    
-                <div style="
-                    margin:14px 0 16px 0;
-                    text-align:center;
-                    font-size:54px;
-                    font-weight:900;
-                    line-height:1.05;
-                    letter-spacing:-0.02em;
+                }}
+                .sev-dot {{
+                    width:14px;
+                    height:14px;
+                    background:{risk_color};
+                    border-radius:50%;
+                    display:inline-block;
+                    flex-shrink:0;
+                }}
+                .severity-label {{
+                    margin:0;
+                    font-family:'Barlow Condensed','Arial Narrow',sans-serif;
+                    font-size:26px;
+                    font-weight:700;
+                    letter-spacing:0.06em;
+                    text-transform:uppercase;
                     color:{risk_color};
-                ">
-                    {round(weighted_score, 1)}
-                    <span style="
-                        font-size:24px;
-                        font-weight:600;
-                        color:{risk_color};
-                        opacity:0.7;
-                    ">
-                        / 10
-                    </span>
+                }}
+                .gauge-score {{
+                    margin:12px 0 2px 0;
+                    text-align:center;
+                    font-family:'IBM Plex Mono',monospace;
+                    font-size:52px;
+                    font-weight:600;
+                    line-height:1.05;
+                    letter-spacing:-0.03em;
+                    color:{risk_color};
+                }}
+                .gauge-denom {{
+                    font-size:22px;
+                    font-weight:500;
+                    opacity:0.6;
+                }}
+                .gauge-cap {{
+                    margin:0;
+                    text-align:center;
+                    font-family:'IBM Plex Mono',monospace;
+                    font-size:10px;
+                    letter-spacing:0.16em;
+                    text-transform:uppercase;
+                    color:#6B6B63;
+                }}
+                .gauge-note {{
+                    margin:14px 0 0 0;
+                    font-size:13px;
+                    font-weight:500;
+                    color:#161A1F;
+                    line-height:1.5;
+                }}
+                .gauge-thresh {{
+                    font-family:'IBM Plex Mono',monospace;
+                    font-size:10px;
+                    letter-spacing:0.10em;
+                    text-transform:uppercase;
+                    margin-top:12px;
+                    color:#6B6B63;
+                }}
+            </style>
+
+            <div class="gauge-wrap">
+                <div class="sev-row">
+                    <span class="sev-dot"></span>
+                    <h2 class="severity-label">{site_severity} Risk</h2>
                 </div>
 
-                <p style="
-                    margin-top:-6px;
-                    text-align:center;
-                    font-size:12px;
-                    font-weight:600;
-                    color:#6b7280;
-                ">
-                    Weighted Site Risk Score
-                </p>
+                <div class="gauge-score">
+                    {round(weighted_score, 1)}<span class="gauge-denom">/10</span>
+                </div>
+
+                <p class="gauge-cap">Weighted Site Risk Score</p>
 
                 <!-- Gauge -->
-                <div style="position:relative; margin-top:16px;">
+                <div style="position:relative; margin-top:18px;">
                     <div style="
-                        height:14px;
+                        height:10px;
                         background:linear-gradient(
                             to right,
-                            #16a34a 0%,
-                            #f59e0b 50%,
-                            #dc2626 100%
+                            #3C8F5C 0%,
+                            #F7A600 50%,
+                            #D64545 100%
                         );
                         border-radius:999px;
                     "></div>
-    
-                    <!-- Animated Indicator -->
+
+                    <!-- Indicator -->
                     <div style="
                         position:absolute;
-                        top:-4px;
+                        top:-5px;
                         left:{risk_pct}%;
-                        width:22px;
-                        height:22px;
-                        background:#111;
+                        width:20px;
+                        height:20px;
+                        background:#161A1F;
+                        border:3px solid #FAF9F5;
                         border-radius:50%;
                         transform:translateX(-50%);
                         transition:left 0.6s ease;
                     "></div>
-    
+
                     <!-- Threshold Marker -->
                     <div style="
                         position:absolute;
-                        top:-6px;
+                        top:-7px;
                         left:{threshold_pct}%;
                         width:2px;
-                        height:26px;
-                        background:#111;
+                        height:24px;
+                        background:#161A1F;
                     "></div>
                 </div>
-    
-                <p style="font-size:12px; margin-top:12px; color:#666;">
-                    High-risk threshold: 7.0
-                </p>
 
-                <p style="
-                    margin-top:14px;
-                    margin-bottom:20px;
-                    font-size:14px;
-                    font-weight:500;
-                    color:#374151;
-                ">
-                    {risk_note}
-                </p>
-            
+                <p class="gauge-thresh">High-risk threshold · 7.0</p>
+
+                <p class="gauge-note">{risk_note}</p>
             </div>
             """,
-            height=340
+            height=330
         )
 
-
-    
     with col2:
-        st.markdown(f"<div style='{card_style}'>", unsafe_allow_html=True)
-    
         st.markdown(
-            "<div class='section-title-small' style='text-align:center;'>Most Frequent Hazards</div>",
+            "<div class='sec-title-small'>Hazards This Inspection</div>",
             unsafe_allow_html=True
         )
-    
+
         if not filtered_hazards:
-            # ✅ Empty state
             st.markdown(
-                f"""
-                <div style="
-                    background:#f0fdf4;
-                    border:1px solid #bbf7d0;
-                    border-radius:12px;
-                    padding:18px;
-                    text-align:center;
-                    color:#166534;
-                    font-weight:600;
-                ">
-                    ✅ No recurring hazards detected<br/>
-                    <span style="font-size:13px; font-weight:400; color:#15803d;">
-                        No hazards were identified in this site inspection
+                """
+                <div class="callout callout-green">
+                    <b>No recurring hazards detected</b><br/>
+                    <span style="font-size:13px;">
+                        No hazards were identified in this site inspection.
                     </span>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
         else:
-            hazards_html = "".join(
-                f"<li>{HAZARD_EMOJI.get(h, '⚠️')} <strong>{h}</strong>: {c} images</li>"
-                for h, c in filtered_hazards
+            hazard_df = pd.DataFrame(
+                filtered_hazards, columns=["HAZARD_CATEGORY", "IMAGE_COUNT"]
             )
 
-            st.markdown(
-                f"""
-                <div style="{SECTION_CARD_BLUE}">
-                    <ul style="margin:0; padding-left:0; list-style:none;">
-                        {hazards_html}
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True
+            hazard_chart = (
+                alt.Chart(hazard_df)
+                .mark_bar(color=AMBER, cornerRadiusEnd=3, height=18)
+                .encode(
+                    y=alt.Y(
+                        "HAZARD_CATEGORY:N",
+                        sort="-x",
+                        title=None,
+                        axis=alt.Axis(
+                            labelColor=INK,
+                            labelFontSize=12,
+                            labelLimit=220,
+                            domainColor=INK,
+                            ticks=False
+                        )
+                    ),
+                    x=alt.X(
+                        "IMAGE_COUNT:Q",
+                        title="Images",
+                        axis=alt.Axis(
+                            tickMinStep=1,
+                            labelColor="#6B6B63",
+                            titleColor="#6B6B63",
+                            titleFontSize=11,
+                            grid=False,
+                            domainColor=INK
+                        )
+                    ),
+                    tooltip=[
+                        alt.Tooltip("HAZARD_CATEGORY:N", title="Hazard"),
+                        alt.Tooltip("IMAGE_COUNT:Q", title="Images")
+                    ]
+                )
+                .properties(height=max(140, 30 * len(filtered_hazards)))
+                .configure_view(strokeWidth=0)
             )
 
+            st.altair_chart(hazard_chart, use_container_width=True)
 
     with col3:
-        st.markdown(f"<div style='{card_style}'>", unsafe_allow_html=True)
-    
         st.markdown(
-            "<div class='section-title-small' style='text-align:center'>TOP 3 Prioritized Corrective Actions</div>",
+            "<div class='sec-title-small'>Top 3 Prioritized Actions</div>",
             unsafe_allow_html=True
         )
-    
+
         if not site_has_hazards:
             st.markdown(
-                f"""
-                <div style="
-                    background:#f0fdf4;
-                    border:1px solid #bbf7d0;
-                    border-radius:12px;
-                    padding:18px;
-                    text-align:center;
-                    color:#166534;
-                    font-weight:600;
-                ">
-                    ✅ No corrective actions required<br/>
-                    <span style="font-size:13px; font-weight:400; color:#15803d;">
-                        No safety hazards were identified across submitted images
+                """
+                <div class="callout callout-green">
+                    <b>No corrective actions required</b><br/>
+                    <span style="font-size:13px;">
+                        No safety hazards were identified across submitted images.
                     </span>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
         else:
-            raw_actions = str(prioritized_actions)
-            raw_actions = raw_actions.replace("\\n", "\n").strip().strip('"').strip("'")
-        
-            action_lines = []
-            for line in raw_actions.splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-        
-                line = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", line)
-                line = line.lstrip("-•0123456789. ").strip()
-                action_lines.append(line)
-        
+            action_lines = parse_bullet_lines(prioritized_actions)
             actions_html = "".join(f"<li>{line}</li>" for line in action_lines)
-        
+
             st.markdown(
                 f"""
-                <div style="{SECTION_CARD_BLUE}">
-                    <ul style="margin:0; padding-left:18px; line-height:1.6;">
+                <div class="card">
+                    <ul class="rank-list">
                         {actions_html}
                     </ul>
                 </div>
@@ -1172,31 +1483,169 @@ if results:
             # CORRECTIVE ACTIONS CHECKLIST EXPORT (CSV)
             # --------------------------------------------------
             checklist_df = build_corrective_actions_checklist(results)
-            
+
             if not checklist_df.empty:
                 csv_data = checklist_df.to_csv(index=False)
-                
-                st.markdown('<div style="margin-top:12px;">', unsafe_allow_html=True)
+
                 st.download_button(
-                    label="📥 Download Corrective Actions Checklist (CSV)",
+                    label="⬇ Corrective Actions Checklist (CSV)",
                     data=csv_data,
                     file_name=f"{site_id}_corrective_actions_checklist.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
-                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.info("No corrective actions available to generate a checklist.")
 
+    # --------------------------------------------------
+    # SECTION: PER-IMAGE RESULT CARDS
+    # --------------------------------------------------
+    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sec-title">Image Findings</div><div class="sec-rule"></div>',
+        unsafe_allow_html=True
+    )
 
+    for idx, item in enumerate(results, start=1):
+        sev = item["severity"]
+        sev_fg = severity_color(sev)
+        sev_bg = severity_bg(sev)
+
+        with st.container(border=True):
+
+            # Hazard-stripe border accent : high-severity cards only
+            if sev == "High":
+                st.markdown('<div class="stripe-accent"></div>', unsafe_allow_html=True)
+
+            c_img, c_meta, c_score = st.columns([1, 2.6, 1])
+
+            with c_img:
+                st.image(item["image_bytes"], width=150)
+
+            with c_meta:
+                if not item["has_potential_hazard"]:
+                    tags_html = '<span class="tag tag-clear">✅ No Visible Hazard</span>'
+                else:
+                    tags_html = "".join(
+                        f'<span class="tag">{HAZARD_EMOJI.get(c, "⚠️")} {c}</span>'
+                        for c in item["hazard_categories"]
+                    )
+
+                st.markdown(
+                    f"""
+                    <div class="img-id">IMG {idx:02d} · {item['image_name']}</div>
+                    <div style="margin:8px 0 10px 0;">
+                        <span class="chip" style="background:{sev_bg}; color:{sev_fg};">
+                            {sev} Risk
+                        </span>
+                    </div>
+                    <div>{tags_html}</div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with c_score:
+                st.markdown(
+                    f"""
+                    <div style="text-align:right;">
+                        <span class="score-denom">Risk Score</span>
+                        <span class="score-badge" style="color:{sev_fg};">
+                            {item['score']}<span class="score-denom">/10</span>
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            # --------------------------------------------------
+            # COLLAPSED DETAIL
+            # --------------------------------------------------
+            with st.expander("Detail", expanded=False):
+
+                # ----- WHY THIS SCORE -----
+                st.markdown(
+                    f"""
+                    <div class="card-flat" style="margin-bottom:14px;">
+                        <div class="sec-title-small">Why this risk score</div>
+                        <div style="font-size:13.5px; line-height:1.65; color:#161A1F;">
+                            {item['risk_explanation']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                d_haz, d_act = st.columns(2)
+
+                # ----- DETECTED HAZARDS -----
+                with d_haz:
+                    st.markdown(
+                        "<div class='sec-title-small'>Detected Hazards</div>",
+                        unsafe_allow_html=True
+                    )
+
+                    if not item["has_potential_hazard"]:
+                        st.markdown(
+                            """
+                            <div class="callout callout-green">
+                                ✅ No hazards detected in this image
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        hazard_lines = parse_bullet_lines(item["detected_hazards"])
+                        hazards_html = "".join(f"<li>{line}</li>" for line in hazard_lines)
+
+                        st.markdown(
+                            f"""
+                            <div class="card">
+                                <ul class="clean-list">
+                                    {hazards_html}
+                                </ul>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                # ----- RECOMMENDED ACTIONS -----
+                with d_act:
+                    st.markdown(
+                        "<div class='sec-title-small'>Recommended Actions</div>",
+                        unsafe_allow_html=True
+                    )
+
+                    if not item["has_potential_hazard"]:
+                        st.markdown(
+                            """
+                            <div class="callout callout-green">
+                                ✅ No corrective actions required for this image
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        action_lines = parse_bullet_lines(item["recommended_actions"])
+                        actions_html = "".join(f"<li>{line}</li>" for line in action_lines)
+
+                        st.markdown(
+                            f"""
+                            <div class="card">
+                                <ul class="clean-list">
+                                    {actions_html}
+                                </ul>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
 
     # --------------------------------------------------
     # SECTION: SITE RISK HISTORY
     # --------------------------------------------------
     highest_image_score = max(item["score"] for item in results)
-    
+
     session.sql(f"""
-    INSERT INTO SNOWFLAKE_LEARNING_DB.PUBLIC.SITE_RISK_HISTORY
+    INSERT INTO SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_RISK_HISTORY
     (
         SITE_ID,
         INSPECTION_TS,
@@ -1214,9 +1663,13 @@ if results:
         {highest_image_score}
     )
     """).collect()
-    st.divider()
-    st.header("📈 Site Risk History")
-    
+
+    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sec-title">Site Risk History</div><div class="sec-rule"></div>',
+        unsafe_allow_html=True
+    )
+
     history_df = session.sql(f"""
     SELECT
         INSPECTION_TS AS "Date & Time",
@@ -1225,12 +1678,12 @@ if results:
         WEIGHTED_SITE_RISK_SCORE AS "Weighted Score",
         SITE_SEVERITY AS "Severity",
         HIGHEST_IMAGE_SCORE AS "Highest Image Score"
-    FROM SNOWFLAKE_LEARNING_DB.PUBLIC.SITE_RISK_HISTORY
+    FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_RISK_HISTORY
     WHERE SITE_ID = '{site_id}'
     ORDER BY INSPECTION_TS DESC
     """).to_pandas()
 
-    
+
     st.dataframe(history_df, use_container_width=True)
 
 
@@ -1240,13 +1693,13 @@ if results:
         ROUND(AVG(WEIGHTED_SITE_RISK_SCORE), 2) AS AVG_SCORE
     FROM (
         SELECT WEIGHTED_SITE_RISK_SCORE
-        FROM SNOWFLAKE_LEARNING_DB.PUBLIC.SITE_RISK_HISTORY
+        FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_RISK_HISTORY
         WHERE SITE_ID = '{site_id}'
         ORDER BY INSPECTION_TS DESC
         LIMIT 3
     )
     """
-    
+
     avg_result = session.sql(avg_query).collect()
     avg_score = avg_result[0]["AVG_SCORE"] if avg_result else None
     avg_severity = severity_from_score(avg_score) if avg_score is not None else "N/A"
@@ -1255,33 +1708,27 @@ if results:
     if len(history_df) >= 2:
         curr = history_df.iloc[0]
         prev = history_df.iloc[1]
-    
+
         diff = round(curr["Weighted Score"] - prev["Weighted Score"], 1)
-        
+
         col_prev, col_avg, col_curr = st.columns(3)
-        
+
         with col_prev:
             st.markdown(
                 f"""
-                <div style="
-                    background:#f9fafb;
-                    padding:18px;
-                    border-radius:14px;
-                    border:1px solid #e5e7eb;
-                ">
-                    <p style="margin:0; font-size:13px; color:#6b7280;">
+                <div class="card">
+                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em;">
                         Previous Inspection
-                    </p>
-                    <h2 style="margin:6px 0;">
-                        {prev["Weighted Score"]}
-                        <span style="font-size:14px; color:#6b7280;">/ 10</span>
-                    </h2>
-                    <p style="margin:0; font-weight:600; color:{severity_color(prev["Severity"])};">
+                    </div>
+                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
+                        {prev["Weighted Score"]}<span class="score-denom">/10</span>
+                    </div>
+                    <span class="chip" style="background:{severity_bg(prev["Severity"])}; color:{severity_color(prev["Severity"])};">
                         {prev["Severity"]}
-                    </p>
-                    <p style="margin-top:6px; font-size:12px; color:#9ca3af;">
+                    </span>
+                    <div class="img-id" style="margin-top:12px;">
                         {prev["Date & Time"]}
-                    </p>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1290,26 +1737,19 @@ if results:
         with col_avg:
             st.markdown(
                 f"""
-                <div style="
-                    background:#f4f7ff;
-                    padding:18px;
-                    border-radius:14px;
-                    border:1px solid #c7d2fe;
-                    box-shadow:0 4px 14px rgba(99,102,241,0.10);
-                ">
-                    <p style="margin:0; font-size:13px; color:#4338ca; font-weight:600;">
+                <div class="card-flat">
+                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em;">
                         Recent Average
-                    </p>
-                    <h2 style="margin:6px 0;">
-                        {avg_score}
-                        <span style="font-size:14px; color:#4338ca;">/ 10</span>
-                    </h2>
-                    <p style="margin:0; font-weight:600; color:{severity_color(avg_severity)};">
+                    </div>
+                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
+                        {avg_score}<span class="score-denom">/10</span>
+                    </div>
+                    <span class="chip" style="background:{severity_bg(avg_severity)}; color:{severity_color(avg_severity)};">
                         {avg_severity}
-                    </p>
-                    <p style="margin-top:6px; font-size:12px; color:#4338ca;">
+                    </span>
+                    <div class="img-id" style="margin-top:12px;">
                         Last 3 inspections
-                    </p>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1319,39 +1759,43 @@ if results:
         with col_curr:
             st.markdown(
                 f"""
-                <div style="
-                    background:#f0f6ff;
-                    padding:18px;
-                    border-radius:14px;
-                    border:1.5px solid #60a5fa;
-                    box-shadow:0 8px 22px rgba(37,99,235,0.18);
-                ">
-                    <p style="margin:0; font-size:13px; color:#1d4ed8; font-weight:700;">
+                <div class="card" style="border:2px solid {INK};">
+                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em; color:{AMBER};">
                         Current Inspection
-                    </p>
-                    <h2 style="margin:6px 0;">
-                        {curr["Weighted Score"]}
-                        <span style="font-size:14px; color:#1d4ed8;">/ 10</span>
-                    </h2>
-                    <p style="margin:0; font-weight:700; color:{severity_color(curr["Severity"])};">
+                    </div>
+                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
+                        {curr["Weighted Score"]}<span class="score-denom">/10</span>
+                    </div>
+                    <span class="chip" style="background:{severity_bg(curr["Severity"])}; color:{severity_color(curr["Severity"])};">
                         {curr["Severity"]}
-                    </p>
-                    <p style="margin-top:6px; font-size:12px; color:#1d4ed8;">
+                    </span>
+                    <div class="img-id" style="margin-top:12px;">
                         {curr["Date & Time"]}
-                    </p>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-    
+        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+
         if diff > 0:
-            st.warning(f"⬆️ **Site risk increased by {diff} points compared to the previous inspection**")
+            trend_html = (
+                f'<div class="callout callout-red">▲ Site risk <b>increased by {diff} points</b> '
+                f'compared to the previous inspection.</div>'
+            )
         elif diff < 0:
-            st.success(f"⬇️ **Site risk decreased by {abs(diff)} points compared to the previous inspection**")
+            trend_html = (
+                f'<div class="callout callout-green">▼ Site risk <b>decreased by {abs(diff)} points</b> '
+                f'compared to the previous inspection.</div>'
+            )
         else:
-            st.info("➖ **Site risk remains unchanged compared to the previous inspection**")
+            trend_html = (
+                '<div class="callout callout-ink">■ Site risk <b>remains unchanged</b> '
+                'compared to the previous inspection.</div>'
+            )
+
+        st.markdown(trend_html, unsafe_allow_html=True)
 
         # --------------------------------------------------
         # SECTION: HAZARD FREQUENCY TREND (LAST 10 INSPECTIONS)
@@ -1359,7 +1803,7 @@ if results:
         hazard_trend_df = session.sql(f"""
         WITH last_10_inspections AS (
             SELECT DISTINCT INSPECTION_TS
-            FROM SNOWFLAKE_LEARNING_DB.PUBLIC.SITE_HAZARD_HISTORY
+            FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_HAZARD_HISTORY
             WHERE SITE_ID = '{site_id}'
             ORDER BY INSPECTION_TS DESC
             LIMIT 10
@@ -1367,36 +1811,58 @@ if results:
         SELECT
             HAZARD_CATEGORY,
             SUM(HAZARD_COUNT) AS TOTAL_COUNT
-        FROM SNOWFLAKE_LEARNING_DB.PUBLIC.SITE_HAZARD_HISTORY
+        FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_HAZARD_HISTORY
         WHERE SITE_ID = '{site_id}'
           AND INSPECTION_TS IN (SELECT INSPECTION_TS FROM last_10_inspections)
         GROUP BY HAZARD_CATEGORY
         ORDER BY TOTAL_COUNT DESC
         """).to_pandas()
 
-        st.subheader("📊 Most Recurring Safety Hazards (Last 10 Inspections)")
-        
+        st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='sec-title-small'>Most Recurring Hazards · Last 10 Inspections</div>",
+            unsafe_allow_html=True
+        )
+
         if hazard_trend_df.empty:
-            st.info("No historical hazard data available yet.")
+            st.markdown(
+                '<div class="callout callout-ink">No historical hazard data available yet.</div>',
+                unsafe_allow_html=True
+            )
         else:
             # Ensure correct ordering
             hazard_trend_df = hazard_trend_df.sort_values(
                 "TOTAL_COUNT", ascending=False
             )
-        
+
             chart = (
                 alt.Chart(hazard_trend_df)
-                .mark_bar(radius=6)
+                .mark_bar(color=INK, cornerRadiusEnd=3)
                 .encode(
                     x=alt.X(
                         "HAZARD_CATEGORY:N",
                         sort="-y",
                         title="Hazard Category",
-                        axis=alt.Axis(labelAngle=-30)
+                        axis=alt.Axis(
+                            labelAngle=-30,
+                            labelColor=INK,
+                            titleColor="#6B6B63",
+                            titleFontSize=11,
+                            domainColor=INK,
+                            ticks=False
+                        )
                     ),
                     y=alt.Y(
                         "TOTAL_COUNT:Q",
-                        title="Total Occurrences"
+                        title="Total Occurrences",
+                        axis=alt.Axis(
+                            tickMinStep=1,
+                            labelColor="#6B6B63",
+                            titleColor="#6B6B63",
+                            titleFontSize=11,
+                            gridColor="#E3DFD5",
+                            domainColor=INK
+                        )
                     ),
                     tooltip=[
                         alt.Tooltip("HAZARD_CATEGORY:N", title="Hazard"),
@@ -1404,15 +1870,16 @@ if results:
                     ]
                 )
                 .properties(height=320)
+                .configure_view(strokeWidth=0)
             )
-        
+
             st.altair_chart(chart, use_container_width=True)
 
 
     # --------------------------------------------------
     # SECTION: SHARE & EXPORT ASSESSMENT
     # --------------------------------------------------
-    
+
     html = f"""
     <html>
     <head>
@@ -1468,7 +1935,7 @@ if results:
             <th>Hazards</th>
         </tr>
     """
-    
+
     for r in results:
         img = base64.b64encode(r["image_bytes"]).decode()
         html += f"""
@@ -1482,22 +1949,22 @@ if results:
             <td>{", ".join(r['hazard_categories'])}</td>
         </tr>
         """
-    
+
     html += """
     </table>
-    
+
     <h2>Most Frequent Hazards</h2>
     <ul>
     """
-    
+
     for h, c in hazard_counter.items():
         if h != "No Visible Hazard":
             html += f"<li>{h}: {c} images</li>"
-    
+
     html += "</ul>"
-    
+
     html += "<h2>Top 3 Prioritized Corrective Actions</h2>"
-    
+
     if prioritized_actions:
         raw_actions = str(prioritized_actions).replace("\\n", "\n").strip().strip('"').strip("'")
         html += "<ul>"
@@ -1508,13 +1975,13 @@ if results:
         html += "</ul>"
     else:
         html += "<p>No prioritized corrective actions generated.</p>"
-    
+
     html += """
     <p style="margin-top:32px; font-size:12px; color:#666;">
         This report was automatically generated using Snowflake Cortex AISQL.
         Results are based on visible site conditions and are intended to assist safety inspections.
     </p>
-    
+
     </body>
     </html>
     """
@@ -1523,96 +1990,74 @@ if results:
     html_bytes = html.encode("utf-8")
     b64 = base64.b64encode(html_bytes).decode()
 
-    st.divider()
-    st.header("📤 Share & Export Assessment")
-    
+    st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sec-title">Share &amp; Export</div><div class="sec-rule"></div>',
+        unsafe_allow_html=True
+    )
+
     col_dl, col_email = st.columns([1, 1])
-    
+
     # --------------------------------------------------
     # DOWNLOAD REPORT
     # --------------------------------------------------
     with col_dl:
-        st.markdown(
-            """
-            <div style="
-                background:#f6f7f9;
-                padding:18px;
-                border-radius:12px;
-            ">
-                <h4 style="margin-top:0;">📄 Download Report</h4>
-                <p style="color:#555; font-size:14px; margin-bottom:16px;">
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="sec-title-small">Download Report</div>
+                <p style="color:#6B6B63; font-size:13.5px; line-height:1.6; margin-bottom:14px;">
                     Export the full site safety assessment as an HTML report
                     for offline review or audit documentation.
                 </p>
-            """,
-            unsafe_allow_html=True
-        )
+                """,
+                unsafe_allow_html=True
+            )
 
-        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-        
-        st.markdown(
-            f"""
-            <a href="data:text/html;base64,{b64}" download="site_safety_report_{site_id}.html"
-               style="
-                display:block;
-                width:100%;
-                text-align:center;
-                background:#1f6feb;
-                color:white;
-                padding:0.4rem;
-                border-radius:0.4rem;
-                font-weight:600;
-                text-decoration:none;
-                cursor:pointer;
-               ">
-                ⬇️ Download Site Safety Report (HTML)
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
+            st.markdown(
+                f"""
+                <a class="dl-link"
+                   href="data:text/html;base64,{b64}"
+                   download="site_safety_report_{site_id}.html">
+                    ⬇ Site Safety Report (HTML)
+                </a>
+                """,
+                unsafe_allow_html=True
+            )
 
-    
-        st.markdown("</div>", unsafe_allow_html=True)
-    
     # --------------------------------------------------
     # SEND VIA EMAIL
     # --------------------------------------------------
     with col_email:
-        st.markdown(
-            """
-            <div style="
-                background:#f6f7f9;
-                padding:18px;
-                border-radius:12px;
-            ">
-                <h4 style="margin-top:0;">✉️ Send via Email</h4>
-                <p style="color:#555; font-size:14px; margin-bottom:12px;">
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="sec-title-small">Send via Email</div>
+                <p style="color:#6B6B63; font-size:13.5px; line-height:1.6; margin-bottom:14px;">
                     Send the assessment summary and prioritized actions
                     directly to stakeholders.
                 </p>
-            """,
-            unsafe_allow_html=True
-        )
+                """,
+                unsafe_allow_html=True
+            )
 
-        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-    
-        recipient_email = st.text_input(
-            "Recipient Email Address",
-            placeholder="Enter receipient email address here",
-            label_visibility="collapsed"
-        )
-    
-        send_email_btn = st.button(
-            "📤 Send Site Risk Assessment",
-            type="primary",
-            use_container_width=True
-        )
-    
-        if send_email_btn:
-            if not recipient_email:
-                st.error("Please enter a valid email address.")
-            else:
-                email_body = f"""
+            recipient_email = st.text_input(
+                "Recipient Email Address",
+                placeholder="Enter recipient email address here",
+                label_visibility="collapsed"
+            )
+
+            send_email_btn = st.button(
+                "Send Site Risk Assessment",
+                type="primary",
+                use_container_width=True
+            )
+
+            if send_email_btn:
+                if not recipient_email:
+                    st.error("Please enter a valid email address.")
+                else:
+                    email_body = f"""
         ⚠️ SITE SAFETY RISK ASSESSMENT
         
         SITE ID: {site_id}
@@ -1634,23 +2079,23 @@ if results:
         This assessment was generated automatically using Snowflake Cortex AISQL.
         """
 
-        
-                safe_email_body = email_body.replace("'", "''")
-        
-                try:
-                    session.sql(
-                        f"""
-                        CALL SYSTEM$SEND_EMAIL(
-                            'SITE_EMAIL_INT',
-                            '{recipient_email}',
-                            'Site Safety Risk Assessment – {site_id}',
-                            '{safe_email_body}'
-                        )
-                        """
-                    ).collect()
-        
-                    st.success(f"✅ Assessment successfully sent to {recipient_email}")
-        
-                except Exception as e:
-                    st.error("❌ Failed to send email.")
-                    st.exception(e)
+
+                    safe_email_body = email_body.replace("'", "''")
+
+                    try:
+                        session.sql(
+                            f"""
+                            CALL SYSTEM$SEND_EMAIL(
+                                'SITE_EMAIL_INT',
+                                '{recipient_email}',
+                                'Site Safety Risk Assessment – {site_id}',
+                                '{safe_email_body}'
+                            )
+                            """
+                        ).collect()
+
+                        st.success(f"✅ Assessment successfully sent to {recipient_email}")
+
+                    except Exception as e:
+                        st.error("❌ Failed to send email.")
+                        st.exception(e)
