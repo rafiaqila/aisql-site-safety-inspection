@@ -30,50 +30,68 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# DESIGN TOKENS
+# DESIGN TOKENS — IBM Carbon Design System (g10 theme)
+# https://carbondesignsystem.com
 # --------------------------------------------------
-INK = "#161A1F"
-AMBER = "#F7A600"
-PAPER = "#FAF9F5"
-RED = "#D64545"
-GREEN = "#3C8F5C"
+CDS_BACKGROUND       = "#f4f4f4"   # $background        Gray 10
+CDS_LAYER_01         = "#ffffff"   # $layer-01
+CDS_LAYER_ACCENT     = "#e0e0e0"   # $layer-accent-01
+CDS_BORDER_SUBTLE    = "#e0e0e0"   # $border-subtle-01  Gray 20
+CDS_BORDER_STRONG    = "#8d8d8d"   # $border-strong-01  Gray 50
+CDS_TEXT_PRIMARY     = "#161616"   # $text-primary      Gray 100
+CDS_TEXT_SECONDARY   = "#525252"   # $text-secondary    Gray 70
+CDS_TEXT_HELPER      = "#6f6f6f"   # $text-helper       Gray 60
+CDS_SUPPORT_ERROR    = "#da1e28"   # $support-error     Red 60
+CDS_SUPPORT_WARNING  = "#F7A600"   # brand amber (in place of Carbon Yellow 30)
+CDS_SUPPORT_SUCCESS  = "#24a148"   # $support-success   Green 50
+CDS_BLUE_60          = "#0f62fe"   # $button-primary / $focus
 
+# Status colour is reserved for status: severity indicators, meter fill,
+# and inline-notification borders. Never a surface fill.
 SEVERITY_TOKENS = {
-    "Low":    {"fg": GREEN, "bg": "#EAF3EC", "icon": "🟢"},
-    "Medium": {"fg": AMBER, "bg": "#FDF2DC", "icon": "🟡"},
-    "High":   {"fg": RED,   "bg": "#FAEAEA", "icon": "🔴"},
+    "Low":    {"fg": CDS_SUPPORT_SUCCESS},
+    "Medium": {"fg": CDS_SUPPORT_WARNING},
+    "High":   {"fg": CDS_SUPPORT_ERROR},
 }
 
 # --------------------------------------------------
-# GLOBAL STYLE
-# Palette : ink / safety amber / paper / alert red / green
-# Type    : Barlow Condensed (display) + Inter (body) + IBM Plex Mono (numerals)
-# Motif   : diagonal hazard stripe -> scan progress + high-severity cards ONLY
+# GLOBAL STYLE — Carbon tokens injected as CSS
+# Type  : IBM Plex Sans (UI) + IBM Plex Mono (numerals, IDs, timestamps)
+# Shape : square corners, 1px subtle borders, no shadows
 # --------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-    --ink:#161A1F;
-    --amber:#F7A600;
-    --paper:#FAF9F5;
-    --red:#D64545;
-    --green:#3C8F5C;
-    --rule:#E3DFD5;
-    --muted:#6B6B63;
-    --display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
-    --body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+    --cds-background:#f4f4f4;
+    --cds-layer:#ffffff;
+    --cds-layer-accent:#e0e0e0;
+    --cds-border-subtle:#e0e0e0;
+    --cds-border-strong:#8d8d8d;
+    --cds-text-primary:#161616;
+    --cds-text-secondary:#525252;
+    --cds-text-helper:#6f6f6f;
+    --cds-text-on-color:#ffffff;
+    --cds-support-error:#da1e28;
+    --cds-support-warning:#F7A600;
+    --cds-support-success:#24a148;
+    --cds-blue-60:#0f62fe;
+    --cds-blue-hover:#0353e9;
+    --cds-blue-active:#002d9c;
+    --cds-gray-80:#393939;
+    --cds-gray-70-hover:#4c4c4c;
+    --sans:'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;
     --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
 }
 
 /* ---------- surface ---------- */
 .stApp,
 [data-testid="stAppViewContainer"] {
-    background:var(--paper);
+    background:var(--cds-background);
 }
 html, body, [data-testid="stAppViewContainer"] * {
-    font-family:var(--body);
+    font-family:var(--sans);
 }
 /* keep Streamlit's ligature icon font — the rule above would otherwise
    render icons as their literal names (e.g. "keyboard_arrow_right") */
@@ -84,413 +102,513 @@ span[data-testid="stIconMaterial"],
     font-family:'Material Symbols Rounded','Material Symbols Outlined' !important;
 }
 code, kbd, pre, samp { font-family:var(--mono); }
+
+/* ---------- Carbon type scale ---------- */
 [data-testid="stAppViewContainer"] p,
 [data-testid="stAppViewContainer"] li,
 [data-testid="stAppViewContainer"] label {
-    color:var(--ink);
-}
-
-/* ---------- hazard stripe motif (2 uses only) ---------- */
-
-/* (a) scan / analysis progress indicator */
-[data-testid="stProgressBarTrack"] > div,
-.stProgress > div > div > div > div {
-    background-image:repeating-linear-gradient(
-        45deg,
-        #F7A600 0 10px,
-        #161A1F 10px 20px
-    ) !important;
-    background-color:#F7A600 !important;
-    background-size:28px 28px;
-    animation:stripe-run 0.9s linear infinite;
-}
-[data-testid="stProgressBarTrack"] {
-    background-color:#E3DFD5 !important;
-    border-radius:999px;
-}
-@keyframes stripe-run {
-    from { background-position:0 0; }
-    to   { background-position:28px 0; }
-}
-
-/* (b) border accent on high-severity result cards */
-.stripe-accent {
-    height:6px;
-    width:100%;
-    border-radius:3px;
-    margin:0 0 12px 0;
-    background-image:repeating-linear-gradient(
-        45deg,
-        var(--amber) 0 10px,
-        var(--ink) 10px 20px
-    );
-}
-
-/* ---------- header ---------- */
-.app-header {
-    padding:26px 0 18px 0;
-    border-bottom:2px solid var(--ink);
-    margin-bottom:26px;
-}
-.app-eyebrow {
-    font-family:var(--mono);
-    font-size:11px;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:10px;
-}
-.app-title {
-    font-family:var(--display);
-    font-size:62px;
-    font-weight:700;
-    line-height:0.98;
-    letter-spacing:0.005em;
-    text-transform:uppercase;
-    color:var(--ink);
-    margin:0 0 10px 0;
-}
-.app-title .amber { color:var(--amber); }
-.app-caption {
+    color:var(--cds-text-primary);
     font-size:14px;
-    color:var(--muted);
-    max-width:680px;
-    line-height:1.6;
+    line-height:20px;
+    letter-spacing:0.16px;
 }
 
-/* ---------- section headings ---------- */
-.sec-title {
-    font-family:var(--display);
-    font-size:30px;
-    font-weight:700;
-    letter-spacing:0.02em;
+/* label-01 */
+.cds-label {
+    font-size:12px;
+    line-height:16px;
+    letter-spacing:0.32px;
+    font-weight:400;
+    color:var(--cds-text-secondary);
+    margin:0 0 8px 0;
+}
+/* label-01, uppercase — section + eyebrow only */
+.cds-section-label {
+    font-size:12px;
+    line-height:16px;
+    letter-spacing:0.32px;
+    font-weight:400;
     text-transform:uppercase;
-    color:var(--ink);
-    margin:8px 0 4px 0;
+    color:var(--cds-text-secondary);
+    margin:0;
 }
-.sec-rule {
-    height:3px;
-    width:56px;
-    background:var(--amber);
-    margin-bottom:16px;
+/* section divider: a neutral rule, never a coloured one */
+.cds-section {
+    border-top:1px solid var(--cds-border-subtle);
+    margin:32px 0 16px 0;
+    padding-top:12px;
 }
-.sec-title-small {
-    font-family:var(--display);
-    font-size:19px;
+/* the header already draws a rule; the first section must not double it */
+.cds-section--flush {
+    border-top:none;
+    margin-top:16px;
+    padding-top:0;
+}
+/* heading-compact-01 */
+.cds-heading {
+    font-size:14px;
+    line-height:18px;
     font-weight:600;
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-    color:var(--ink);
-    margin:0 0 10px 0;
+    letter-spacing:0.16px;
+    color:var(--cds-text-primary);
+    margin:0 0 8px 0;
 }
-.field-label {
-    font-family:var(--display);
-    font-size:17px;
-    font-weight:600;
-    letter-spacing:0.09em;
-    text-transform:uppercase;
-    color:var(--ink);
-    margin:0 0 4px 0;
+/* body-01 */
+.cds-body {
+    font-size:14px;
+    line-height:20px;
+    letter-spacing:0.16px;
+    color:var(--cds-text-primary);
 }
-
-/* ---------- Site ID field : condensed display face ---------- */
-.st-key-site_id input,
-div[class*="st-key-site_id"] input {
-    font-family:var(--display) !important;
-    font-size:22px !important;
-    font-weight:600 !important;
-    letter-spacing:0.08em !important;
-    text-transform:uppercase;
-    color:var(--ink) !important;
-}
-[data-testid="stTextInput"] input {
-    background:#FFFFFF;
-    border-radius:2px;
-    border:1px solid var(--rule);
-}
-[data-testid="stTextInput"] input:focus {
-    border-color:var(--amber);
-    box-shadow:0 0 0 2px rgba(247,166,0,0.25);
+/* helper-text-01 */
+.cds-helper {
+    font-size:12px;
+    line-height:16px;
+    color:var(--cds-text-helper);
 }
 
-/* ---------- cards ---------- */
-.card {
-    background:#FFFFFF;
-    border:1px solid var(--rule);
-    border-radius:4px;
-    padding:18px;
-    margin-bottom:14px;
+/* ---------- header bar ---------- */
+.cds-header {
+    border-bottom:1px solid var(--cds-border-subtle);
+    padding:4px 0 16px 0;
+    margin-bottom:4px;
 }
-.card-flat {
-    background:#F3F1EA;
-    border:1px solid var(--rule);
-    border-radius:4px;
+.cds-eyebrow {
+    font-size:12px;
+    line-height:16px;
+    letter-spacing:0.32px;
+    text-transform:uppercase;
+    color:var(--cds-text-secondary);
+    margin-bottom:8px;
+}
+/* heading-04 — normal weight, no display face */
+.cds-title {
+    font-size:28px;
+    line-height:36px;
+    font-weight:400;
+    letter-spacing:0;
+    color:var(--cds-text-primary);
+    margin:0;
+}
+
+/* ---------- tile ---------- */
+.cds-tile {
+    background:var(--cds-layer);
+    border:1px solid var(--cds-border-subtle);
+    border-radius:0;
     padding:16px;
 }
 
 /* ---------- numerals ---------- */
-.mono { font-family:var(--mono); }
-.score-big {
+.cds-mono { font-family:var(--mono); }
+.cds-score-lg {
     font-family:var(--mono);
-    font-size:40px;
-    font-weight:600;
-    line-height:1;
-    letter-spacing:-0.02em;
+    font-size:32px;
+    line-height:40px;
+    font-weight:400;
+    color:var(--cds-text-primary);
 }
-.score-badge {
+.cds-score-md {
     font-family:var(--mono);
-    font-size:26px;
-    font-weight:600;
-    line-height:1;
-    padding:10px 0 4px 0;
-    display:block;
+    font-size:20px;
+    line-height:28px;
+    font-weight:400;
+    color:var(--cds-text-primary);
 }
-.score-denom {
+.cds-denom {
     font-family:var(--mono);
     font-size:12px;
-    color:var(--muted);
-    letter-spacing:0.06em;
+    line-height:16px;
+    color:var(--cds-text-helper);
 }
-.img-id {
+.cds-id {
     font-family:var(--mono);
     font-size:12px;
-    letter-spacing:0.04em;
-    color:var(--muted);
+    line-height:16px;
+    color:var(--cds-text-secondary);
     word-break:break-all;
 }
 
-/* ---------- chips + tags ---------- */
-.chip {
-    display:inline-block;
-    font-family:var(--display);
+/* ---------- status indicator (colour lives here) ---------- */
+.cds-status {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
     font-size:14px;
-    font-weight:600;
-    letter-spacing:0.10em;
-    text-transform:uppercase;
-    padding:4px 12px;
-    border-radius:2px;
+    line-height:18px;
+    letter-spacing:0.16px;
 }
-.tag {
+.cds-status-swatch {
+    width:8px;
+    height:8px;
+    flex:0 0 8px;
+    display:inline-block;
+}
+
+/* ---------- tag (outline, no fill) ---------- */
+.cds-tag {
     display:inline-block;
     font-size:12px;
-    font-weight:500;
-    color:var(--ink);
-    background:#F3F1EA;
-    border:1px solid var(--rule);
-    border-radius:2px;
-    padding:3px 9px;
-    margin:0 6px 6px 0;
-}
-.tag-clear {
-    background:#EAF3EC;
-    border-color:#C5DFCC;
-    color:var(--green);
-    font-weight:600;
+    line-height:16px;
+    color:var(--cds-text-secondary);
+    background:var(--cds-layer);
+    border:1px solid var(--cds-border-subtle);
+    border-radius:0;
+    padding:3px 8px;
+    margin:0 4px 4px 0;
 }
 
-/* ---------- callouts ---------- */
-.callout {
-    border-left:4px solid var(--amber);
-    background:#FDF2DC;
+/* ---------- inline notification ---------- */
+.cds-notification {
+    background:var(--cds-layer);
+    border:1px solid var(--cds-border-subtle);
+    border-left:3px solid var(--cds-blue-60);
+    border-radius:0;
     padding:14px 16px;
-    border-radius:2px;
+}
+.cds-notification .cds-n-title {
     font-size:14px;
-    color:var(--ink);
+    line-height:18px;
+    font-weight:600;
+    color:var(--cds-text-primary);
 }
-.callout-red {
-    border-left-color:var(--red);
-    background:#FAEAEA;
+.cds-notification .cds-n-body {
+    font-size:14px;
+    line-height:18px;
+    letter-spacing:0.16px;
+    color:var(--cds-text-secondary);
+    margin-top:4px;
 }
-.callout-green {
-    border-left-color:var(--green);
-    background:#EAF3EC;
-}
-.callout-ink {
-    border-left-color:var(--ink);
-    background:#F3F1EA;
-}
+.cds-notification--error   { border-left-color:var(--cds-support-error); }
+.cds-notification--warning { border-left-color:var(--cds-support-warning); }
+.cds-notification--success { border-left-color:var(--cds-support-success); }
+.cds-notification--neutral { border-left-color:var(--cds-gray-80); }
 
 /* ---------- lists ---------- */
-.clean-list { margin:0; padding-left:18px; line-height:1.7; font-size:14px; }
-.clean-list li { margin-bottom:6px; }
-.rank-list { margin:0; padding-left:0; list-style:none; counter-reset:rank; }
-.rank-list li {
-    counter-increment:rank;
+.cds-list { margin:0; padding-left:18px; }
+.cds-list li {
+    font-size:14px;
+    line-height:20px;
+    letter-spacing:0.16px;
+    color:var(--cds-text-primary);
+    margin-bottom:6px;
+}
+.cds-ordered { margin:0; padding-left:0; list-style:none; counter-reset:cds-rank; }
+.cds-ordered li {
+    counter-increment:cds-rank;
     position:relative;
-    padding-left:34px;
+    padding-left:28px;
     margin-bottom:12px;
     font-size:14px;
-    line-height:1.55;
+    line-height:20px;
+    letter-spacing:0.16px;
+    color:var(--cds-text-primary);
 }
-.rank-list li::before {
-    content:counter(rank);
+.cds-ordered li::before {
+    content:counter(cds-rank);
     position:absolute;
-    left:0; top:0;
-    width:24px; height:24px;
-    background:var(--amber);
-    color:var(--ink);
+    left:0; top:1px;
     font-family:var(--mono);
-    font-size:13px;
-    font-weight:600;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:2px;
+    font-size:12px;
+    line-height:18px;
+    color:var(--cds-text-secondary);
 }
+
+/* ---------- data table (Carbon, sm row height) ---------- */
+.cds-table-wrap {
+    border:1px solid var(--cds-border-subtle);
+    background:var(--cds-layer);
+    overflow-x:auto;
+}
+.cds-table {
+    width:100%;
+    border-collapse:collapse;
+    font-family:var(--sans);
+}
+.cds-table th {
+    background:var(--cds-layer-accent);
+    color:var(--cds-text-primary);
+    font-size:14px;
+    font-weight:600;
+    line-height:18px;
+    text-align:left;
+    height:32px;
+    padding:0 16px;
+    white-space:nowrap;
+    border-bottom:1px solid var(--cds-border-subtle);
+}
+.cds-table td {
+    height:32px;
+    padding:0 16px;
+    font-size:14px;
+    line-height:18px;
+    letter-spacing:0.16px;
+    color:var(--cds-text-primary);
+    white-space:nowrap;
+    border-bottom:1px solid var(--cds-border-subtle);
+}
+.cds-table tr:last-child td { border-bottom:none; }
+.cds-table td.cds-num,
+.cds-table td.cds-ts { font-family:var(--mono); }
+.cds-table td.cds-num { text-align:right; }
+.cds-table th.cds-num-h { text-align:right; }
 
 /* ---------- buttons ---------- */
 .stButton > button,
 .stDownloadButton > button {
-    font-family:var(--display);
-    font-size:17px;
-    font-weight:600;
-    letter-spacing:0.10em;
-    text-transform:uppercase;
-    border-radius:2px;
-    border:1px solid var(--ink);
-    background:#FFFFFF;
-    color:var(--ink);
-    transition:transform 0.06s ease;
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:18px;
+    letter-spacing:0.16px;
+    font-weight:400;
+    text-transform:none;
+    border-radius:0;
+    min-height:48px;
+    padding:13px 60px 13px 15px;
+    border:1px solid transparent;
+    background:var(--cds-blue-60);
+    color:var(--cds-text-on-color);
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    text-align:left;
+    transition:background 70ms cubic-bezier(0,0,0.38,0.9);
 }
 .stButton > button:hover,
 .stDownloadButton > button:hover {
-    border-color:var(--amber);
-    color:var(--ink);
-    background:#FDF2DC;
-}
-.stButton > button[kind="primary"],
-.stButton > button[data-testid="stBaseButton-primary"] {
-    background:var(--amber);
-    color:var(--ink);
-    border:1px solid var(--ink);
-}
-.stButton > button[kind="primary"]:hover,
-.stButton > button[data-testid="stBaseButton-primary"]:hover {
-    background:var(--ink);
-    color:var(--amber);
+    background:var(--cds-blue-hover);
+    color:var(--cds-text-on-color);
+    border-color:transparent;
 }
 .stButton > button:active,
-.stDownloadButton > button:active { transform:translateY(1px); }
-/* button label lives in an inner <p>; make it follow the button's color
-   so hover/disabled states never go ink-on-ink */
+.stDownloadButton > button:active { background:var(--cds-blue-active); }
+.stButton > button:focus,
+.stDownloadButton > button:focus {
+    outline:2px solid var(--cds-blue-60);
+    outline-offset:-2px;
+    box-shadow:none;
+}
+/* secondary = Carbon Gray 80 */
+.stDownloadButton > button {
+    background:var(--cds-gray-80);
+}
+.stDownloadButton > button:hover { background:var(--cds-gray-70-hover); }
+/* Streamlit nests the label in a centring div; Carbon buttons are left-aligned */
+.stButton > button > div,
+.stDownloadButton > button > div {
+    justify-content:flex-start !important;
+    width:100%;
+}
+/* button label lives in an inner <p>; make it follow the button's colour
+   so hover/disabled states never go text-on-same-colour */
 .stButton > button p,
 .stDownloadButton > button p {
     color:inherit !important;
     font-family:inherit !important;
     font-size:inherit !important;
+    line-height:inherit !important;
     letter-spacing:inherit !important;
+    font-weight:inherit !important;
+    text-align:left;
+    width:100%;
 }
 
-.dl-link {
-    display:block;
+/* anchor styled as a Carbon primary button */
+.cds-btn-link {
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
     width:100%;
-    text-align:center;
-    background:var(--amber);
-    color:var(--ink) !important;
-    border:1px solid var(--ink);
-    padding:10px;
-    border-radius:2px;
-    font-family:var(--display);
-    font-size:17px;
-    font-weight:600;
-    letter-spacing:0.10em;
-    text-transform:uppercase;
-    text-decoration:none;
+    min-height:48px;
+    padding:13px 60px 13px 15px;
+    background:var(--cds-blue-60);
+    color:var(--cds-text-on-color) !important;
+    border:1px solid transparent;
+    border-radius:0;
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:18px;
+    letter-spacing:0.16px;
+    text-decoration:none !important;
     cursor:pointer;
 }
-.dl-link:hover { background:var(--ink); color:var(--amber) !important; }
+.cds-btn-link:hover {
+    background:var(--cds-blue-hover);
+    text-decoration:none !important;
+}
 
-/* ---------- expanders ---------- */
+/* ---------- text input (Carbon field: bottom rule only) ---------- */
+[data-testid="stTextInput"] div[data-baseweb="input"],
+[data-testid="stTextInput"] div[data-baseweb="base-input"] {
+    background:var(--cds-layer);
+    border:none;
+    border-radius:0;
+    box-shadow:none;
+}
+[data-testid="stTextInput"] div[data-baseweb="input"] {
+    border-bottom:1px solid var(--cds-border-strong);
+}
+[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
+    outline:2px solid var(--cds-blue-60);
+    outline-offset:-2px;
+    border-bottom-color:transparent;
+}
+[data-testid="stTextInput"] input {
+    background:transparent;
+    font-family:var(--sans);
+    font-size:14px;
+    letter-spacing:0.16px;
+    color:var(--cds-text-primary);
+    height:40px;
+    padding:0 16px;
+    border-radius:0;
+}
+[data-testid="stTextInput"] input::placeholder { color:var(--cds-text-helper); }
+
+/* ---------- file uploader ---------- */
+[data-testid="stFileUploaderDropzone"] {
+    background:var(--cds-layer);
+    border:1px dashed var(--cds-border-strong);
+    border-radius:0;
+}
+
+/* ---------- progress bar ---------- */
+[data-testid="stProgressBarTrack"] {
+    background-color:var(--cds-border-subtle) !important;
+    border-radius:0 !important;
+    height:8px !important;
+}
+[data-testid="stProgressBarTrack"] > div,
+.stProgress > div > div > div > div {
+    background-image:none !important;
+    background-color:var(--cds-blue-60) !important;
+    border-radius:0 !important;
+    animation:none !important;
+}
+
+/* ---------- accordion (Streamlit expander) ---------- */
 [data-testid="stExpander"] {
-    border:1px solid var(--rule);
-    border-radius:4px;
-    background:#FFFFFF;
+    background:transparent;
+    border:none;
+    border-radius:0;
+    box-shadow:none;
+}
+[data-testid="stExpander"] details {
+    background:transparent;
+    border:none;
+    border-top:1px solid var(--cds-border-subtle);
+    border-bottom:1px solid var(--cds-border-subtle);
+    border-radius:0;
+    box-shadow:none;
 }
 [data-testid="stExpander"] summary {
-    font-family:var(--display);
-    font-size:16px;
+    border-radius:0;
+    font-family:var(--sans);
+    font-size:14px;
+    font-weight:400;
+    letter-spacing:0.16px;
+    text-transform:none;
+    color:var(--cds-text-primary);
+}
+[data-testid="stExpander"] summary:hover { background:var(--cds-background); }
+
+/* ---------- bordered container = Carbon tile ----------
+   st.container(border=True) draws its 1px border on the stVerticalBlock
+   itself in this Streamlit version, with an 8px radius. Setting radius +
+   border-colour broadly is safe: blocks with border-style:none show neither. */
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stVerticalBlock"] {
+    border-radius:0 !important;
+    border-color:var(--cds-border-subtle) !important;
+}
+
+/* ---------- tabs ---------- */
+[data-baseweb="tab-list"] {
+    gap:0;
+    border-bottom:1px solid var(--cds-border-subtle);
+    background:transparent;
+}
+[data-baseweb="tab"] {
+    font-family:var(--sans);
+    font-size:14px;
+    letter-spacing:0.16px;
+    text-transform:none;
+    color:var(--cds-text-secondary);
+}
+[data-baseweb="tab"][aria-selected="true"] {
+    color:var(--cds-text-primary);
     font-weight:600;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
 }
+[data-baseweb="tab-highlight"] { background-color:var(--cds-blue-60); }
 
-/* ---------- containers ---------- */
-[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius:4px;
-}
-
-/* ---------- sidebar : ink panel ---------- */
+/* ---------- sidebar = Carbon SideNav ---------- */
 [data-testid="stSidebar"] {
-    background:var(--ink);
-    border-right:3px solid var(--amber);
+    background:var(--cds-layer);
+    border-right:1px solid var(--cds-border-subtle);
 }
 [data-testid="stSidebar"] *,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] li,
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {
-    color:var(--paper);
+[data-testid="stSidebar"] label {
+    color:var(--cds-text-primary);
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] {
-    background:#1F242B;
-    border:1px solid #2E353E;
+    background:transparent;
+    border-top:1px solid var(--cds-border-subtle);
+    border-bottom:1px solid var(--cds-border-subtle);
 }
-[data-testid="stSidebar"] [data-testid="stExpander"] summary { color:var(--amber); }
 [data-testid="stSidebar"] blockquote {
-    border-left:3px solid var(--amber);
-    padding-left:10px;
-    color:#CFCBC1;
+    border-left:3px solid var(--cds-border-subtle);
+    padding-left:12px;
+    color:var(--cds-text-secondary);
 }
 [data-testid="stSidebar"] code {
-    background:#2E353E;
-    color:var(--amber);
+    background:var(--cds-background);
+    color:var(--cds-text-primary);
+    font-size:12px;
 }
-[data-testid="stSidebar"] [data-baseweb="tab"] {
-    font-family:var(--display);
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-}
-.side-brand {
-    font-family:var(--display);
-    font-size:21px;
-    font-weight:700;
-    letter-spacing:0.10em;
-    text-transform:uppercase;
-    color:var(--paper);
+.cds-product {
+    font-size:14px;
+    line-height:18px;
+    font-weight:600;
+    color:var(--cds-text-primary);
     margin-bottom:2px;
 }
-.side-sub {
-    font-family:var(--mono);
-    font-size:10px;
-    letter-spacing:0.18em;
+.cds-product-sub {
+    font-size:12px;
+    line-height:16px;
+    letter-spacing:0.32px;
     text-transform:uppercase;
-    color:#8A8F97;
-    margin-bottom:14px;
+    color:var(--cds-text-secondary);
+    margin-bottom:16px;
 }
 
-/* ---------- scan progress block ---------- */
-.scan-label {
-    font-family:var(--display);
-    font-size:20px;
+/* ---------- scan progress ---------- */
+.cds-scan-label {
+    font-size:14px;
+    line-height:18px;
     font-weight:600;
-    letter-spacing:0.10em;
-    text-transform:uppercase;
-    color:var(--ink);
-    margin-bottom:2px;
+    color:var(--cds-text-primary);
+    margin-bottom:4px;
 }
-.scan-status {
+.cds-scan-status {
     font-family:var(--mono);
-    font-size:12.5px;
-    letter-spacing:0.03em;
-    color:var(--muted);
+    font-size:12px;
+    line-height:16px;
+    color:var(--cds-text-secondary);
 }
-.scan-status b { color:var(--amber); font-weight:600; }
+
+/* ---------- Streamlit alerts (st.exception fallback) ---------- */
+[data-testid="stAlert"] {
+    border-radius:0;
+}
 
 /* ---------- misc ---------- */
-[data-testid="stDataFrame"] { border:1px solid var(--rule); border-radius:4px; }
-hr { border-color:var(--rule); }
+[data-testid="stDataFrame"] {
+    border:1px solid var(--cds-border-subtle);
+    border-radius:0;
+}
+hr { border-color:var(--cds-border-subtle); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -503,8 +621,8 @@ hr { border-color:var(--rule); }
 with st.sidebar:
     st.markdown(
         """
-        <div class="side-brand">Site Safety</div>
-        <div class="side-sub">AISQL Inspection</div>
+        <div class="cds-product">Site Safety Inspection</div>
+        <div class="cds-product-sub">Snowflake Cortex AISQL</div>
         """,
         unsafe_allow_html=True
     )
@@ -526,7 +644,7 @@ with st.sidebar:
             - Strong performance on image understanding + text generation
             """)
 
-            st.caption("🔒 Model fixed to Claude Sonnet 4.0 for consistency and auditability")
+            st.caption("Model fixed to Claude Sonnet 4.0 for consistency and auditability")
 
         # ------------------------------
         # MODEL LIMITATIONS
@@ -608,15 +726,9 @@ with st.sidebar:
 # SECTION: HEADER
 # --------------------------------------------------
 st.markdown("""
-<div class="app-header">
-    <div class="app-eyebrow">Snowflake Cortex AISQL</div>
-    <div class="app-title">
-        Site Safety<br/>Hazard &amp; <span class="amber">Risk</span> Inspection
-    </div>
-    <div class="app-caption">
-        Detect safety hazards, calculate risk, and recommend corrective actions
-        from site inspection imagery.
-    </div>
+<div class="cds-header">
+    <div class="cds-eyebrow">Snowflake Cortex AISQL</div>
+    <div class="cds-title">Site Safety Hazard &amp; Risk Inspection</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -624,14 +736,15 @@ st.markdown("""
 # SECTION: INPUT
 # --------------------------------------------------
 st.markdown(
-    '<div class="sec-title">Site Information</div><div class="sec-rule"></div>',
+    '<div class="cds-section cds-section--flush">'
+    '<div class="cds-section-label">Site Information</div></div>',
     unsafe_allow_html=True
 )
 
 in_col_id, in_col_files = st.columns([1, 2])
 
 with in_col_id:
-    st.markdown('<div class="field-label">Site ID</div>', unsafe_allow_html=True)
+    st.markdown('<div class="cds-label">Site ID</div>', unsafe_allow_html=True)
     site_id = st.text_input(
         "Site ID",
         value="SITE_A",
@@ -640,7 +753,7 @@ with in_col_id:
     )
 
 with in_col_files:
-    st.markdown('<div class="field-label">Inspection Images</div>', unsafe_allow_html=True)
+    st.markdown('<div class="cds-label">Inspection images</div>', unsafe_allow_html=True)
     uploaded_files = st.file_uploader(
         "Upload site inspection images",
         type=["jpg", "jpeg", "png"],
@@ -649,7 +762,7 @@ with in_col_files:
     )
 
 analyze_btn = st.button(
-    "Analyze Site",
+    "Analyze site",
     use_container_width=True,
     type="primary"
 )
@@ -710,15 +823,8 @@ def severity_from_score(score):
         return "High"
 
 
-def severity_style(severity):
-    token = SEVERITY_TOKENS.get(severity, SEVERITY_TOKENS["Low"])
-    return token["icon"], token["bg"]
-
 def severity_color(sev):
-    return SEVERITY_TOKENS.get(sev, {}).get("fg", INK)
-
-def severity_bg(sev):
-    return SEVERITY_TOKENS.get(sev, {}).get("bg", "#F3F1EA")
+    return SEVERITY_TOKENS.get(sev, {}).get("fg", CDS_TEXT_SECONDARY)
 
 def bullets_to_html(text):
     """
@@ -764,6 +870,58 @@ def parse_bullet_lines(text):
         lines.append(line)
 
     return lines
+
+def notify(title, body=None, kind="neutral"):
+    """Carbon inline notification. kind: error | warning | success | neutral."""
+    body_html = f'<div class="cds-n-body">{body}</div>' if body else ""
+    st.markdown(
+        f'<div class="cds-notification cds-notification--{kind}">'
+        f'<div class="cds-n-title">{title}</div>{body_html}</div>',
+        unsafe_allow_html=True
+    )
+
+
+def render_history_table(df):
+    """
+    Render the inspection history as a Carbon data table (sm row height,
+    monospace numerals, no zebra striping). Replaces st.dataframe, whose
+    cells are canvas-rendered and therefore not styleable.
+    """
+    num_cols = {"Images", "Weighted Score", "Highest Image Score"}
+    ts_cols = {"Date & Time"}
+
+    head = "".join(
+        f'<th class="{"cds-num-h" if c in num_cols else ""}">{c}</th>'
+        for c in df.columns
+    )
+
+    body = ""
+    for _, row in df.iterrows():
+        cells = ""
+        for c in df.columns:
+            value = row[c]
+            if c == "Severity":
+                colour = severity_color(str(value))
+                cells += (
+                    '<td><span class="cds-status">'
+                    f'<span class="cds-status-swatch" style="background:{colour};"></span>'
+                    f'<span style="color:{colour};">{value}</span>'
+                    "</span></td>"
+                )
+            elif c in num_cols:
+                cells += f'<td class="cds-num">{value}</td>'
+            elif c in ts_cols:
+                cells += f'<td class="cds-ts">{value}</td>'
+            else:
+                cells += f"<td>{value}</td>"
+        body += f"<tr>{cells}</tr>"
+
+    st.markdown(
+        f'<div class="cds-table-wrap"><table class="cds-table">'
+        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>",
+        unsafe_allow_html=True
+    )
+
 
 def build_corrective_actions_checklist(results):
     """
@@ -830,11 +988,11 @@ results = st.session_state.analysis_results
 
 if analyze_btn:
     if not site_id.strip():
-        st.error("❌ Site ID is required.")
+        notify("Site ID is required", kind="error")
         st.stop()
 
     if not uploaded_files:
-        st.error("❌ Please upload at least one site inspection image.")
+        notify("At least one site inspection image is required", kind="error")
         st.stop()
 
     results.clear()
@@ -850,13 +1008,13 @@ if analyze_btn:
 
     scan_box = st.empty()
     with scan_box.container():
-        st.markdown('<div class="scan-label">Scanning Site</div>', unsafe_allow_html=True)
+        st.markdown('<div class="cds-scan-label">Scanning site</div>', unsafe_allow_html=True)
         status_slot = st.empty()
         progress_bar = st.progress(0.0)
 
     def set_status(image_index, file_label, message):
         status_slot.markdown(
-            f'<div class="scan-status">IMAGE {image_index}/{total_images} · '
+            f'<div class="cds-scan-status">IMAGE {image_index}/{total_images} · '
             f'{file_label} — <b>{message}</b></div>',
             unsafe_allow_html=True
         )
@@ -1019,14 +1177,12 @@ appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
 if results:
     st.markdown(
         f"""
-        <div class="callout callout-ink" style="margin-bottom:22px;">
-            <span class="mono" style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#6B6B63;">
-                Analysis complete
-            </span><br/>
-            <span style="font-size:14px;">
-                <b>{len(results)}</b> image(s) processed for site
-                <b class="mono">{site_id}</b>
-            </span>
+        <div class="cds-notification cds-notification--neutral" style="margin-bottom:24px;">
+            <div class="cds-n-title">Analysis complete</div>
+            <div class="cds-n-body">
+                {len(results)} image(s) processed for site
+                <span class="cds-mono">{site_id}</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
@@ -1139,21 +1295,19 @@ if results:
             # UI feedback
             st.markdown(
                 f"""
-                <div class="callout callout-red" style="margin-bottom:18px;">
-                    <span class="mono" style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">
-                        High risk detected
-                    </span><br/>
-                    <span style="font-size:14px;">
-                        Notification automatically sent to Safety Manager
-                        (<b>{SAFETY_MANAGER_NAME}</b> · {SAFETY_MANAGER_EMAIL})
-                    </span>
+                <div class="cds-notification cds-notification--error" style="margin-bottom:24px;">
+                    <div class="cds-n-title">High site risk detected</div>
+                    <div class="cds-n-body">
+                        Notification automatically sent to safety manager
+                        ({SAFETY_MANAGER_NAME} · {SAFETY_MANAGER_EMAIL})
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
         except Exception as e:
-            st.error("❌ Failed to send automated safety alert.")
+            notify("Failed to send automated safety alert", kind="error")
             st.exception(e)
 
     # --------------------------------------------------
@@ -1221,7 +1375,7 @@ if results:
     # SECTION: SITE RISK SUMMARY  (above per-image results)
     # --------------------------------------------------
     st.markdown(
-        '<div class="sec-title">Site Risk Summary</div><div class="sec-rule"></div>',
+        '<div class="cds-section"><div class="cds-section-label">Site Risk Summary</div></div>',
         unsafe_allow_html=True
     )
 
@@ -1230,7 +1384,6 @@ if results:
     risk_pct = min(max(int((weighted_score / 10) * 100), 0), 100)
 
     risk_color = severity_color(site_severity)
-    card_bg = severity_bg(site_severity)
 
     threshold_pct = 70  # 7.0 / 10 threshold
 
@@ -1245,7 +1398,7 @@ if results:
 
     with col1:
         st.markdown(
-            "<div class='sec-title-small'>Overall Site Risk</div>",
+            "<div class='cds-heading'>Overall site risk</div>",
             unsafe_allow_html=True
         )
         components.html(
@@ -1253,151 +1406,126 @@ if results:
             <!-- non-blocking font load: a hanging/blocked font host must never
                  delay first paint of this iframe (fallback stacks below) -->
             <link rel="stylesheet" media="print" onload="this.media='all'"
-                  href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap"/>
+                  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap"/>
             <style>
                 * {{ box-sizing:border-box; }}
-                .gauge-wrap {{
-                    background:{card_bg};
-                    border:1px solid #E3DFD5;
-                    border-radius:4px;
-                    padding:18px;
-                    font-family:'Inter',system-ui,sans-serif;
+                body {{ margin:0; }}
+                .cds-meter-tile {{
+                    background:#ffffff;
+                    border:1px solid #e0e0e0;
+                    padding:16px;
+                    font-family:'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;
                 }}
-                .sev-row {{
+                .cds-meter-status {{
                     display:flex;
                     align-items:center;
-                    gap:10px;
+                    gap:8px;
+                    font-size:14px;
+                    line-height:18px;
+                    letter-spacing:0.16px;
+                    color:{risk_color};
                 }}
-                .sev-dot {{
-                    width:14px;
-                    height:14px;
+                .cds-meter-swatch {{
+                    width:8px; height:8px;
+                    flex:0 0 8px;
                     background:{risk_color};
-                    border-radius:50%;
                     display:inline-block;
-                    flex-shrink:0;
                 }}
-                .severity-label {{
+                .cds-meter-score {{
+                    font-family:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+                    font-size:32px;
+                    line-height:40px;
+                    font-weight:400;
+                    color:#161616;
+                    margin:12px 0 0 0;
+                }}
+                .cds-meter-denom {{
+                    font-family:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+                    font-size:12px;
+                    line-height:16px;
+                    color:#6f6f6f;
+                }}
+                .cds-meter-label {{
+                    font-size:12px;
+                    line-height:16px;
+                    letter-spacing:0.32px;
+                    color:#525252;
                     margin:0;
-                    font-family:'Barlow Condensed','Arial Narrow',sans-serif;
-                    font-size:26px;
-                    font-weight:700;
-                    letter-spacing:0.06em;
-                    text-transform:uppercase;
-                    color:{risk_color};
                 }}
-                .gauge-score {{
-                    margin:12px 0 2px 0;
-                    text-align:center;
-                    font-family:'IBM Plex Mono',monospace;
-                    font-size:52px;
-                    font-weight:600;
-                    line-height:1.05;
-                    letter-spacing:-0.03em;
-                    color:{risk_color};
+                /* Carbon Meter: flat track, solid status fill, 1px threshold rule */
+                .cds-meter-track {{
+                    position:relative;
+                    height:8px;
+                    background:#e0e0e0;
+                    margin:20px 0 8px 0;
                 }}
-                .gauge-denom {{
-                    font-size:22px;
-                    font-weight:500;
-                    opacity:0.6;
+                .cds-meter-fill {{
+                    position:absolute;
+                    top:0; left:0;
+                    height:8px;
+                    width:{risk_pct}%;
+                    background:{risk_color};
                 }}
-                .gauge-cap {{
+                .cds-meter-threshold {{
+                    position:absolute;
+                    top:-4px;
+                    left:{threshold_pct}%;
+                    width:1px;
+                    height:16px;
+                    background:#161616;
+                }}
+                .cds-meter-help {{
+                    font-size:12px;
+                    line-height:16px;
+                    color:#6f6f6f;
                     margin:0;
-                    text-align:center;
-                    font-family:'IBM Plex Mono',monospace;
-                    font-size:10px;
-                    letter-spacing:0.16em;
-                    text-transform:uppercase;
-                    color:#6B6B63;
                 }}
-                .gauge-note {{
-                    margin:14px 0 0 0;
-                    font-size:13px;
-                    font-weight:500;
-                    color:#161A1F;
-                    line-height:1.5;
-                }}
-                .gauge-thresh {{
-                    font-family:'IBM Plex Mono',monospace;
-                    font-size:10px;
-                    letter-spacing:0.10em;
-                    text-transform:uppercase;
-                    margin-top:12px;
-                    color:#6B6B63;
+                .cds-meter-note {{
+                    font-size:14px;
+                    line-height:20px;
+                    letter-spacing:0.16px;
+                    color:#525252;
+                    margin:16px 0 0 0;
                 }}
             </style>
 
-            <div class="gauge-wrap">
-                <div class="sev-row">
-                    <span class="sev-dot"></span>
-                    <h2 class="severity-label">{site_severity} Risk</h2>
+            <div class="cds-meter-tile">
+                <div class="cds-meter-status">
+                    <span class="cds-meter-swatch"></span>
+                    <span>{site_severity} risk</span>
                 </div>
 
-                <div class="gauge-score">
-                    {round(weighted_score, 1)}<span class="gauge-denom">/10</span>
+                <div class="cds-meter-score">
+                    {round(weighted_score, 1)}<span class="cds-meter-denom">/10</span>
                 </div>
+                <p class="cds-meter-label">Weighted site risk score</p>
 
-                <p class="gauge-cap">Weighted Site Risk Score</p>
-
-                <!-- Gauge -->
-                <div style="position:relative; margin-top:18px;">
-                    <div style="
-                        height:10px;
-                        background:linear-gradient(
-                            to right,
-                            #3C8F5C 0%,
-                            #F7A600 50%,
-                            #D64545 100%
-                        );
-                        border-radius:999px;
-                    "></div>
-
-                    <!-- Indicator -->
-                    <div style="
-                        position:absolute;
-                        top:-5px;
-                        left:{risk_pct}%;
-                        width:20px;
-                        height:20px;
-                        background:#161A1F;
-                        border:3px solid #FAF9F5;
-                        border-radius:50%;
-                        transform:translateX(-50%);
-                        transition:left 0.6s ease;
-                    "></div>
-
-                    <!-- Threshold Marker -->
-                    <div style="
-                        position:absolute;
-                        top:-7px;
-                        left:{threshold_pct}%;
-                        width:2px;
-                        height:24px;
-                        background:#161A1F;
-                    "></div>
+                <div class="cds-meter-track">
+                    <div class="cds-meter-fill"></div>
+                    <div class="cds-meter-threshold"></div>
                 </div>
+                <p class="cds-meter-help">High-risk threshold 7.0</p>
 
-                <p class="gauge-thresh">High-risk threshold · 7.0</p>
-
-                <p class="gauge-note">{risk_note}</p>
+                <p class="cds-meter-note">{risk_note}</p>
             </div>
             """,
-            height=330
+            height=300
         )
 
     with col2:
         st.markdown(
-            "<div class='sec-title-small'>Hazards This Inspection</div>",
+            "<div class='cds-heading'>Hazards this inspection</div>",
             unsafe_allow_html=True
         )
 
         if not filtered_hazards:
             st.markdown(
                 """
-                <div class="callout callout-green">
-                    <b>No recurring hazards detected</b><br/>
-                    <span style="font-size:13px;">
+                <div class="cds-notification cds-notification--success">
+                    <div class="cds-n-title">No recurring hazards detected</div>
+                    <div class="cds-n-body">
                         No hazards were identified in this site inspection.
-                    </span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1409,17 +1537,18 @@ if results:
 
             hazard_chart = (
                 alt.Chart(hazard_df)
-                .mark_bar(color=AMBER, cornerRadiusEnd=3, height=18)
+                .mark_bar(color=CDS_BLUE_60, height=16)
                 .encode(
                     y=alt.Y(
                         "HAZARD_CATEGORY:N",
                         sort="-x",
                         title=None,
                         axis=alt.Axis(
-                            labelColor=INK,
+                            labelColor=CDS_TEXT_SECONDARY,
+                            labelFont="IBM Plex Sans",
                             labelFontSize=12,
                             labelLimit=220,
-                            domainColor=INK,
+                            domainColor=CDS_BORDER_SUBTLE,
                             ticks=False
                         )
                     ),
@@ -1428,11 +1557,13 @@ if results:
                         title="Images",
                         axis=alt.Axis(
                             tickMinStep=1,
-                            labelColor="#6B6B63",
-                            titleColor="#6B6B63",
-                            titleFontSize=11,
+                            labelColor=CDS_TEXT_SECONDARY,
+                            labelFont="IBM Plex Mono",
+                            titleColor=CDS_TEXT_SECONDARY,
+                            titleFont="IBM Plex Sans",
+                            titleFontSize=12,
                             grid=False,
-                            domainColor=INK
+                            domainColor=CDS_BORDER_SUBTLE
                         )
                     ),
                     tooltip=[
@@ -1442,24 +1573,25 @@ if results:
                 )
                 .properties(height=max(140, 30 * len(filtered_hazards)))
                 .configure_view(strokeWidth=0)
+                .configure_axis(labelFont="IBM Plex Sans", titleFont="IBM Plex Sans")
             )
 
             st.altair_chart(hazard_chart, use_container_width=True)
 
     with col3:
         st.markdown(
-            "<div class='sec-title-small'>Top 3 Prioritized Actions</div>",
+            "<div class='cds-heading'>Top 3 prioritized actions</div>",
             unsafe_allow_html=True
         )
 
         if not site_has_hazards:
             st.markdown(
                 """
-                <div class="callout callout-green">
-                    <b>No corrective actions required</b><br/>
-                    <span style="font-size:13px;">
+                <div class="cds-notification cds-notification--success">
+                    <div class="cds-n-title">No corrective actions required</div>
+                    <div class="cds-n-body">
                         No safety hazards were identified across submitted images.
-                    </span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1470,10 +1602,10 @@ if results:
 
             st.markdown(
                 f"""
-                <div class="card">
-                    <ul class="rank-list">
+                <div class="cds-tile">
+                    <ol class="cds-ordered">
                         {actions_html}
-                    </ul>
+                    </ol>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1488,34 +1620,29 @@ if results:
                 csv_data = checklist_df.to_csv(index=False)
 
                 st.download_button(
-                    label="⬇ Corrective Actions Checklist (CSV)",
+                    label="Download corrective actions checklist (CSV)",
                     data=csv_data,
                     file_name=f"{site_id}_corrective_actions_checklist.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
             else:
-                st.info("No corrective actions available to generate a checklist.")
+                notify("No corrective actions available to generate a checklist.")
 
     # --------------------------------------------------
     # SECTION: PER-IMAGE RESULT CARDS
     # --------------------------------------------------
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
     st.markdown(
-        '<div class="sec-title">Image Findings</div><div class="sec-rule"></div>',
+        '<div class="cds-section"><div class="cds-section-label">Image Findings</div></div>',
         unsafe_allow_html=True
     )
 
     for idx, item in enumerate(results, start=1):
         sev = item["severity"]
         sev_fg = severity_color(sev)
-        sev_bg = severity_bg(sev)
 
         with st.container(border=True):
-
-            # Hazard-stripe border accent : high-severity cards only
-            if sev == "High":
-                st.markdown('<div class="stripe-accent"></div>', unsafe_allow_html=True)
 
             c_img, c_meta, c_score = st.columns([1, 2.6, 1])
 
@@ -1523,21 +1650,17 @@ if results:
                 st.image(item["image_bytes"], width=150)
 
             with c_meta:
-                if not item["has_potential_hazard"]:
-                    tags_html = '<span class="tag tag-clear">✅ No Visible Hazard</span>'
-                else:
-                    tags_html = "".join(
-                        f'<span class="tag">{HAZARD_EMOJI.get(c, "⚠️")} {c}</span>'
-                        for c in item["hazard_categories"]
-                    )
+                tags_html = "".join(
+                    f'<span class="cds-tag">{c}</span>'
+                    for c in item["hazard_categories"]
+                )
 
                 st.markdown(
                     f"""
-                    <div class="img-id">IMG {idx:02d} · {item['image_name']}</div>
-                    <div style="margin:8px 0 10px 0;">
-                        <span class="chip" style="background:{sev_bg}; color:{sev_fg};">
-                            {sev} Risk
-                        </span>
+                    <div class="cds-id">IMG {idx:02d} · {item['image_name']}</div>
+                    <div class="cds-status" style="margin:8px 0 10px 0;">
+                        <span class="cds-status-swatch" style="background:{sev_fg};"></span>
+                        <span style="color:{sev_fg};">{sev} risk</span>
                     </div>
                     <div>{tags_html}</div>
                     """,
@@ -1548,10 +1671,8 @@ if results:
                 st.markdown(
                     f"""
                     <div style="text-align:right;">
-                        <span class="score-denom">Risk Score</span>
-                        <span class="score-badge" style="color:{sev_fg};">
-                            {item['score']}<span class="score-denom">/10</span>
-                        </span>
+                        <div class="cds-denom">Risk score</div>
+                        <div class="cds-score-md">{item['score']}<span class="cds-denom">/10</span></div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -1565,9 +1686,9 @@ if results:
                 # ----- WHY THIS SCORE -----
                 st.markdown(
                     f"""
-                    <div class="card-flat" style="margin-bottom:14px;">
-                        <div class="sec-title-small">Why this risk score</div>
-                        <div style="font-size:13.5px; line-height:1.65; color:#161A1F;">
+                    <div class="cds-tile" style="margin-bottom:16px;">
+                        <div class="cds-heading">Why this risk score</div>
+                        <div class="cds-body">
                             {item['risk_explanation']}
                         </div>
                     </div>
@@ -1580,15 +1701,15 @@ if results:
                 # ----- DETECTED HAZARDS -----
                 with d_haz:
                     st.markdown(
-                        "<div class='sec-title-small'>Detected Hazards</div>",
+                        "<div class='cds-heading'>Detected hazards</div>",
                         unsafe_allow_html=True
                     )
 
                     if not item["has_potential_hazard"]:
                         st.markdown(
                             """
-                            <div class="callout callout-green">
-                                ✅ No hazards detected in this image
+                            <div class="cds-notification cds-notification--success">
+                                <div class="cds-n-title">No hazards detected in this image</div>
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -1599,8 +1720,8 @@ if results:
 
                         st.markdown(
                             f"""
-                            <div class="card">
-                                <ul class="clean-list">
+                            <div class="cds-tile">
+                                <ul class="cds-list">
                                     {hazards_html}
                                 </ul>
                             </div>
@@ -1611,15 +1732,15 @@ if results:
                 # ----- RECOMMENDED ACTIONS -----
                 with d_act:
                     st.markdown(
-                        "<div class='sec-title-small'>Recommended Actions</div>",
+                        "<div class='cds-heading'>Recommended actions</div>",
                         unsafe_allow_html=True
                     )
 
                     if not item["has_potential_hazard"]:
                         st.markdown(
                             """
-                            <div class="callout callout-green">
-                                ✅ No corrective actions required for this image
+                            <div class="cds-notification cds-notification--success">
+                                <div class="cds-n-title">No corrective actions required</div>
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -1630,8 +1751,8 @@ if results:
 
                         st.markdown(
                             f"""
-                            <div class="card">
-                                <ul class="clean-list">
+                            <div class="cds-tile">
+                                <ul class="cds-list">
                                     {actions_html}
                                 </ul>
                             </div>
@@ -1666,7 +1787,7 @@ if results:
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
     st.markdown(
-        '<div class="sec-title">Site Risk History</div><div class="sec-rule"></div>',
+        '<div class="cds-section"><div class="cds-section-label">Site Risk History</div></div>',
         unsafe_allow_html=True
     )
 
@@ -1684,7 +1805,7 @@ if results:
     """).to_pandas()
 
 
-    st.dataframe(history_df, use_container_width=True)
+    render_history_table(history_df)
 
 
     # MOVING AVERAGE (LAST 3 INSPECTIONS)
@@ -1716,19 +1837,14 @@ if results:
         with col_prev:
             st.markdown(
                 f"""
-                <div class="card">
-                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em;">
-                        Previous Inspection
+                <div class="cds-tile">
+                    <div class="cds-label">Previous inspection</div>
+                    <div class="cds-score-lg">{prev["Weighted Score"]}<span class="cds-denom">/10</span></div>
+                    <div class="cds-status" style="margin-top:8px;">
+                        <span class="cds-status-swatch" style="background:{severity_color(prev["Severity"])};"></span>
+                        <span style="color:{severity_color(prev["Severity"])};">{prev["Severity"]}</span>
                     </div>
-                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
-                        {prev["Weighted Score"]}<span class="score-denom">/10</span>
-                    </div>
-                    <span class="chip" style="background:{severity_bg(prev["Severity"])}; color:{severity_color(prev["Severity"])};">
-                        {prev["Severity"]}
-                    </span>
-                    <div class="img-id" style="margin-top:12px;">
-                        {prev["Date & Time"]}
-                    </div>
+                    <div class="cds-id" style="margin-top:12px;">{prev["Date & Time"]}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1737,19 +1853,14 @@ if results:
         with col_avg:
             st.markdown(
                 f"""
-                <div class="card-flat">
-                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em;">
-                        Recent Average
+                <div class="cds-tile">
+                    <div class="cds-label">Recent average</div>
+                    <div class="cds-score-lg">{avg_score}<span class="cds-denom">/10</span></div>
+                    <div class="cds-status" style="margin-top:8px;">
+                        <span class="cds-status-swatch" style="background:{severity_color(avg_severity)};"></span>
+                        <span style="color:{severity_color(avg_severity)};">{avg_severity}</span>
                     </div>
-                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
-                        {avg_score}<span class="score-denom">/10</span>
-                    </div>
-                    <span class="chip" style="background:{severity_bg(avg_severity)}; color:{severity_color(avg_severity)};">
-                        {avg_severity}
-                    </span>
-                    <div class="img-id" style="margin-top:12px;">
-                        Last 3 inspections
-                    </div>
+                    <div class="cds-id" style="margin-top:12px;">Last 3 inspections</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1759,19 +1870,14 @@ if results:
         with col_curr:
             st.markdown(
                 f"""
-                <div class="card" style="border:2px solid {INK};">
-                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em; color:{AMBER};">
-                        Current Inspection
+                <div class="cds-tile" style="border-left:3px solid {CDS_BLUE_60};">
+                    <div class="cds-label">Current inspection</div>
+                    <div class="cds-score-lg">{curr["Weighted Score"]}<span class="cds-denom">/10</span></div>
+                    <div class="cds-status" style="margin-top:8px;">
+                        <span class="cds-status-swatch" style="background:{severity_color(curr["Severity"])};"></span>
+                        <span style="color:{severity_color(curr["Severity"])};">{curr["Severity"]}</span>
                     </div>
-                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
-                        {curr["Weighted Score"]}<span class="score-denom">/10</span>
-                    </div>
-                    <span class="chip" style="background:{severity_bg(curr["Severity"])}; color:{severity_color(curr["Severity"])};">
-                        {curr["Severity"]}
-                    </span>
-                    <div class="img-id" style="margin-top:12px;">
-                        {curr["Date & Time"]}
-                    </div>
+                    <div class="cds-id" style="margin-top:12px;">{curr["Date & Time"]}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1781,18 +1887,21 @@ if results:
 
         if diff > 0:
             trend_html = (
-                f'<div class="callout callout-red">▲ Site risk <b>increased by {diff} points</b> '
-                f'compared to the previous inspection.</div>'
+                f'<div class="cds-notification cds-notification--error">'
+                f'<div class="cds-n-title">Site risk increased by {diff} points</div>'
+                f'<div class="cds-n-body">Compared to the previous inspection.</div></div>'
             )
         elif diff < 0:
             trend_html = (
-                f'<div class="callout callout-green">▼ Site risk <b>decreased by {abs(diff)} points</b> '
-                f'compared to the previous inspection.</div>'
+                f'<div class="cds-notification cds-notification--success">'
+                f'<div class="cds-n-title">Site risk decreased by {abs(diff)} points</div>'
+                f'<div class="cds-n-body">Compared to the previous inspection.</div></div>'
             )
         else:
             trend_html = (
-                '<div class="callout callout-ink">■ Site risk <b>remains unchanged</b> '
-                'compared to the previous inspection.</div>'
+                '<div class="cds-notification cds-notification--neutral">'
+                '<div class="cds-n-title">Site risk unchanged</div>'
+                '<div class="cds-n-body">Compared to the previous inspection.</div></div>'
             )
 
         st.markdown(trend_html, unsafe_allow_html=True)
@@ -1820,13 +1929,14 @@ if results:
 
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
         st.markdown(
-            "<div class='sec-title-small'>Most Recurring Hazards · Last 10 Inspections</div>",
+            "<div class='cds-heading'>Most recurring hazards · last 10 inspections</div>",
             unsafe_allow_html=True
         )
 
         if hazard_trend_df.empty:
             st.markdown(
-                '<div class="callout callout-ink">No historical hazard data available yet.</div>',
+                '<div class="cds-notification cds-notification--neutral">'
+                '<div class="cds-n-body">No historical hazard data available yet.</div></div>',
                 unsafe_allow_html=True
             )
         else:
@@ -1837,7 +1947,7 @@ if results:
 
             chart = (
                 alt.Chart(hazard_trend_df)
-                .mark_bar(color=INK, cornerRadiusEnd=3)
+                .mark_bar(color=CDS_BLUE_60)
                 .encode(
                     x=alt.X(
                         "HAZARD_CATEGORY:N",
@@ -1845,10 +1955,12 @@ if results:
                         title="Hazard Category",
                         axis=alt.Axis(
                             labelAngle=-30,
-                            labelColor=INK,
-                            titleColor="#6B6B63",
-                            titleFontSize=11,
-                            domainColor=INK,
+                            labelColor=CDS_TEXT_SECONDARY,
+                            labelFont="IBM Plex Sans",
+                            titleColor=CDS_TEXT_SECONDARY,
+                            titleFont="IBM Plex Sans",
+                            titleFontSize=12,
+                            domainColor=CDS_BORDER_SUBTLE,
                             ticks=False
                         )
                     ),
@@ -1857,11 +1969,13 @@ if results:
                         title="Total Occurrences",
                         axis=alt.Axis(
                             tickMinStep=1,
-                            labelColor="#6B6B63",
-                            titleColor="#6B6B63",
-                            titleFontSize=11,
-                            gridColor="#E3DFD5",
-                            domainColor=INK
+                            labelColor=CDS_TEXT_SECONDARY,
+                            labelFont="IBM Plex Mono",
+                            titleColor=CDS_TEXT_SECONDARY,
+                            titleFont="IBM Plex Sans",
+                            titleFontSize=12,
+                            gridColor=CDS_BORDER_SUBTLE,
+                            domainColor=CDS_BORDER_SUBTLE
                         )
                     ),
                     tooltip=[
@@ -1871,6 +1985,7 @@ if results:
                 )
                 .properties(height=320)
                 .configure_view(strokeWidth=0)
+                .configure_axis(labelFont="IBM Plex Sans", titleFont="IBM Plex Sans")
             )
 
             st.altair_chart(chart, use_container_width=True)
@@ -1992,7 +2107,7 @@ if results:
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
     st.markdown(
-        '<div class="sec-title">Share &amp; Export</div><div class="sec-rule"></div>',
+        '<div class="cds-section"><div class="cds-section-label">Share &amp; Export</div></div>',
         unsafe_allow_html=True
     )
 
@@ -2005,8 +2120,8 @@ if results:
         with st.container(border=True):
             st.markdown(
                 """
-                <div class="sec-title-small">Download Report</div>
-                <p style="color:#6B6B63; font-size:13.5px; line-height:1.6; margin-bottom:14px;">
+                <div class="cds-heading">Download report</div>
+                <p class="cds-helper" style="margin-bottom:16px;">
                     Export the full site safety assessment as an HTML report
                     for offline review or audit documentation.
                 </p>
@@ -2016,10 +2131,10 @@ if results:
 
             st.markdown(
                 f"""
-                <a class="dl-link"
+                <a class="cds-btn-link"
                    href="data:text/html;base64,{b64}"
                    download="site_safety_report_{site_id}.html">
-                    ⬇ Site Safety Report (HTML)
+                    Download site safety report (HTML)
                 </a>
                 """,
                 unsafe_allow_html=True
@@ -2032,8 +2147,8 @@ if results:
         with st.container(border=True):
             st.markdown(
                 """
-                <div class="sec-title-small">Send via Email</div>
-                <p style="color:#6B6B63; font-size:13.5px; line-height:1.6; margin-bottom:14px;">
+                <div class="cds-heading">Send via email</div>
+                <p class="cds-helper" style="margin-bottom:16px;">
                     Send the assessment summary and prioritized actions
                     directly to stakeholders.
                 </p>
@@ -2048,14 +2163,14 @@ if results:
             )
 
             send_email_btn = st.button(
-                "Send Site Risk Assessment",
+                "Send site risk assessment",
                 type="primary",
                 use_container_width=True
             )
 
             if send_email_btn:
                 if not recipient_email:
-                    st.error("Please enter a valid email address.")
+                    notify("Enter a valid email address", kind="error")
                 else:
                     email_body = f"""
         ⚠️ SITE SAFETY RISK ASSESSMENT
@@ -2094,8 +2209,8 @@ if results:
                             """
                         ).collect()
 
-                        st.success(f"✅ Assessment successfully sent to {recipient_email}")
+                        notify("Assessment sent", f"Delivered to {recipient_email}", kind="success")
 
                     except Exception as e:
-                        st.error("❌ Failed to send email.")
+                        notify("Failed to send email", kind="error")
                         st.exception(e)
