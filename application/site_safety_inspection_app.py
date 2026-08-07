@@ -9,7 +9,6 @@ import json
 from collections import Counter
 from snowflake.snowpark.context import get_active_session
 from datetime import datetime, timezone, timedelta
-import streamlit.components.v1 as components
 import base64
 import pandas as pd
 import altair as alt
@@ -34,25 +33,29 @@ st.set_page_config(
 # --------------------------------------------------
 INK = "#161A1F"
 AMBER = "#F7A600"
-PAPER = "#FAF9F5"
 RED = "#D64545"
 GREEN = "#3C8F5C"
+RULE = "#E3DFD5"
+MUTED = "#6B6B63"
 
 SEVERITY_TOKENS = {
-    "Low":    {"fg": GREEN, "bg": "#EAF3EC", "icon": "🟢"},
-    "Medium": {"fg": AMBER, "bg": "#FDF2DC", "icon": "🟡"},
-    "High":   {"fg": RED,   "bg": "#FAEAEA", "icon": "🔴"},
+    "Low":    {"fg": GREEN},
+    "Medium": {"fg": AMBER},
+    "High":   {"fg": RED},
 }
+SEVERITY_ORDER = ["Low", "Medium", "High"]
 
 # --------------------------------------------------
 # GLOBAL STYLE
 # Palette : ink / safety amber / paper / alert red / green
-# Type    : Barlow Condensed (display) + Inter (body) + IBM Plex Mono (numerals)
+# Type    : Space Grotesk (display) + Inter (body) + Space Mono (numerals)
 # Motif   : diagonal hazard stripe -> scan progress + high-severity cards ONLY
+# Severity: segmented indicators (10-block risk meter, 3-block level) —
+#           never tinted pills or coloured alert boxes
 # --------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
     --ink:#161A1F;
@@ -62,9 +65,9 @@ st.markdown("""
     --green:#3C8F5C;
     --rule:#E3DFD5;
     --muted:#6B6B63;
-    --display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+    --display:'Space Grotesk','Helvetica Neue',Arial,sans-serif;
     --body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-    --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+    --mono:'Space Mono','SFMono-Regular',Consolas,monospace;
 }
 
 /* ---------- surface ---------- */
@@ -106,7 +109,7 @@ code, kbd, pre, samp { font-family:var(--mono); }
 }
 [data-testid="stProgressBarTrack"] {
     background-color:#E3DFD5 !important;
-    border-radius:999px;
+    border-radius:0;
 }
 @keyframes stripe-run {
     from { background-position:0 0; }
@@ -117,7 +120,6 @@ code, kbd, pre, samp { font-family:var(--mono); }
 .stripe-accent {
     height:6px;
     width:100%;
-    border-radius:3px;
     margin:0 0 12px 0;
     background-image:repeating-linear-gradient(
         45deg,
@@ -135,17 +137,18 @@ code, kbd, pre, samp { font-family:var(--mono); }
 .app-eyebrow {
     font-family:var(--mono);
     font-size:11px;
-    letter-spacing:0.22em;
+    letter-spacing:0.20em;
     text-transform:uppercase;
     color:var(--muted);
     margin-bottom:10px;
 }
+/* Space Grotesk is normal-width; sized down from the old condensed face */
 .app-title {
     font-family:var(--display);
-    font-size:62px;
+    font-size:42px;
     font-weight:700;
-    line-height:0.98;
-    letter-spacing:0.005em;
+    line-height:1.05;
+    letter-spacing:-0.01em;
     text-transform:uppercase;
     color:var(--ink);
     margin:0 0 10px 0;
@@ -161,9 +164,9 @@ code, kbd, pre, samp { font-family:var(--mono); }
 /* ---------- section headings ---------- */
 .sec-title {
     font-family:var(--display);
-    font-size:30px;
+    font-size:22px;
     font-weight:700;
-    letter-spacing:0.02em;
+    letter-spacing:0.01em;
     text-transform:uppercase;
     color:var(--ink);
     margin:8px 0 4px 0;
@@ -176,36 +179,36 @@ code, kbd, pre, samp { font-family:var(--mono); }
 }
 .sec-title-small {
     font-family:var(--display);
-    font-size:19px;
+    font-size:15px;
     font-weight:600;
-    letter-spacing:0.06em;
+    letter-spacing:0.10em;
     text-transform:uppercase;
     color:var(--ink);
     margin:0 0 10px 0;
 }
 .field-label {
     font-family:var(--display);
-    font-size:17px;
+    font-size:13px;
     font-weight:600;
-    letter-spacing:0.09em;
+    letter-spacing:0.12em;
     text-transform:uppercase;
     color:var(--ink);
     margin:0 0 4px 0;
 }
 
-/* ---------- Site ID field : condensed display face ---------- */
+/* ---------- Site ID field ---------- */
 .st-key-site_id input,
 div[class*="st-key-site_id"] input {
     font-family:var(--display) !important;
-    font-size:22px !important;
+    font-size:19px !important;
     font-weight:600 !important;
-    letter-spacing:0.08em !important;
+    letter-spacing:0.06em !important;
     text-transform:uppercase;
     color:var(--ink) !important;
 }
 [data-testid="stTextInput"] input {
     background:#FFFFFF;
-    border-radius:2px;
+    border-radius:0;
     border:1px solid var(--rule);
 }
 [data-testid="stTextInput"] input:focus {
@@ -217,59 +220,145 @@ div[class*="st-key-site_id"] input {
 .card {
     background:#FFFFFF;
     border:1px solid var(--rule);
-    border-radius:4px;
     padding:18px;
     margin-bottom:14px;
 }
 .card-flat {
     background:#F3F1EA;
     border:1px solid var(--rule);
-    border-radius:4px;
     padding:16px;
+}
+.card-plain {
+    background:#FFFFFF;
+    border:1px solid var(--ink);
+    padding:16px;
+}
+
+/* ---------- label plate (replaces tinted alert callouts) ----------
+   Industrial status plate: solid strip carrying the status word, body on
+   white. No tinted fills, no coloured left borders. */
+.plate {
+    background:#FFFFFF;
+    border:1px solid var(--ink);
+    margin-bottom:16px;
+}
+.plate-strip {
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--display);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    padding:7px 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.plate-strip .swatch {
+    width:8px;
+    height:8px;
+    display:inline-block;
+    flex:0 0 8px;
+}
+.plate-body {
+    padding:12px 14px;
+    font-size:14px;
+    line-height:1.55;
+    color:var(--ink);
+}
+.plate-body .mono { font-family:var(--mono); font-size:13px; }
+.plate--alert .plate-strip { background:var(--red); color:#FFFFFF; }
+.plate--ok    .plate-strip { background:var(--green); color:#FFFFFF; }
+.plate-metric {
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:-0.02em;
+    margin-right:8px;
+}
+
+/* ---------- segmented severity language ---------- */
+/* 10-block risk meter (0–10) */
+.seg-track {
+    display:flex;
+    gap:3px;
+    width:100%;
+    position:relative;
+}
+.seg {
+    flex:1;
+    height:16px;
+    background:var(--rule);
+    position:relative;
+    overflow:hidden;
+}
+.seg-fill {
+    position:absolute;
+    top:0; left:0; bottom:0;
+}
+.seg-threshold {
+    position:absolute;
+    top:-4px;
+    bottom:-4px;
+    width:2px;
+    background:var(--ink);
+}
+/* 3-block severity level */
+.sev-seg {
+    display:flex;
+    gap:3px;
+}
+.sev-seg i {
+    display:block;
+    flex:1;
+    height:6px;
+    background:var(--rule);
+}
+.sev-label {
+    font-family:var(--display);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    margin-top:6px;
 }
 
 /* ---------- numerals ---------- */
 .mono { font-family:var(--mono); }
 .score-big {
     font-family:var(--mono);
-    font-size:40px;
-    font-weight:600;
+    font-size:34px;
+    font-weight:700;
     line-height:1;
-    letter-spacing:-0.02em;
+    letter-spacing:-0.03em;
 }
 .score-badge {
     font-family:var(--mono);
-    font-size:26px;
-    font-weight:600;
+    font-size:22px;
+    font-weight:700;
     line-height:1;
     padding:10px 0 4px 0;
     display:block;
 }
 .score-denom {
     font-family:var(--mono);
-    font-size:12px;
+    font-size:11px;
+    font-weight:400;
     color:var(--muted);
-    letter-spacing:0.06em;
+    letter-spacing:0.04em;
 }
 .img-id {
     font-family:var(--mono);
-    font-size:12px;
-    letter-spacing:0.04em;
+    font-size:11.5px;
+    font-weight:400;
+    letter-spacing:0.02em;
     color:var(--muted);
     word-break:break-all;
 }
 
-/* ---------- chips + tags ---------- */
-.chip {
-    display:inline-block;
-    font-family:var(--display);
-    font-size:14px;
-    font-weight:600;
-    letter-spacing:0.10em;
-    text-transform:uppercase;
-    padding:4px 12px;
-    border-radius:2px;
-}
+/* ---------- tags ---------- */
 .tag {
     display:inline-block;
     font-size:12px;
@@ -277,7 +366,6 @@ div[class*="st-key-site_id"] input {
     color:var(--ink);
     background:#F3F1EA;
     border:1px solid var(--rule);
-    border-radius:2px;
     padding:3px 9px;
     margin:0 6px 6px 0;
 }
@@ -286,28 +374,6 @@ div[class*="st-key-site_id"] input {
     border-color:#C5DFCC;
     color:var(--green);
     font-weight:600;
-}
-
-/* ---------- callouts ---------- */
-.callout {
-    border-left:4px solid var(--amber);
-    background:#FDF2DC;
-    padding:14px 16px;
-    border-radius:2px;
-    font-size:14px;
-    color:var(--ink);
-}
-.callout-red {
-    border-left-color:var(--red);
-    background:#FAEAEA;
-}
-.callout-green {
-    border-left-color:var(--green);
-    background:#EAF3EC;
-}
-.callout-ink {
-    border-left-color:var(--ink);
-    background:#F3F1EA;
 }
 
 /* ---------- lists ---------- */
@@ -330,23 +396,22 @@ div[class*="st-key-site_id"] input {
     background:var(--amber);
     color:var(--ink);
     font-family:var(--mono);
-    font-size:13px;
-    font-weight:600;
+    font-size:12px;
+    font-weight:700;
     display:flex;
     align-items:center;
     justify-content:center;
-    border-radius:2px;
 }
 
 /* ---------- buttons ---------- */
 .stButton > button,
 .stDownloadButton > button {
     font-family:var(--display);
-    font-size:17px;
+    font-size:14px;
     font-weight:600;
-    letter-spacing:0.10em;
+    letter-spacing:0.12em;
     text-transform:uppercase;
-    border-radius:2px;
+    border-radius:0;
     border:1px solid var(--ink);
     background:#FFFFFF;
     color:var(--ink);
@@ -371,14 +436,15 @@ div[class*="st-key-site_id"] input {
 }
 .stButton > button:active,
 .stDownloadButton > button:active { transform:translateY(1px); }
-/* button label lives in an inner <p>; make it follow the button's color
-   so hover/disabled states never go ink-on-ink */
+/* button label lives in an inner <p>; make it follow the button's colour
+   so hover/disabled states never go text-on-same-colour */
 .stButton > button p,
 .stDownloadButton > button p {
     color:inherit !important;
     font-family:inherit !important;
     font-size:inherit !important;
     letter-spacing:inherit !important;
+    font-weight:inherit !important;
 }
 
 .dl-link {
@@ -388,35 +454,41 @@ div[class*="st-key-site_id"] input {
     background:var(--amber);
     color:var(--ink) !important;
     border:1px solid var(--ink);
-    padding:10px;
-    border-radius:2px;
+    padding:11px;
     font-family:var(--display);
-    font-size:17px;
+    font-size:14px;
     font-weight:600;
-    letter-spacing:0.10em;
+    letter-spacing:0.12em;
     text-transform:uppercase;
-    text-decoration:none;
+    text-decoration:none !important;
     cursor:pointer;
 }
 .dl-link:hover { background:var(--ink); color:var(--amber) !important; }
 
 /* ---------- expanders ---------- */
 [data-testid="stExpander"] {
+    border:none;
+    background:transparent;
+}
+[data-testid="stExpander"] details {
     border:1px solid var(--rule);
-    border-radius:4px;
+    border-radius:0;
     background:#FFFFFF;
 }
 [data-testid="stExpander"] summary {
+    border-radius:0;
     font-family:var(--display);
-    font-size:16px;
+    font-size:13px;
     font-weight:600;
-    letter-spacing:0.08em;
+    letter-spacing:0.12em;
     text-transform:uppercase;
 }
 
 /* ---------- containers ---------- */
-[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius:4px;
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stVerticalBlock"] {
+    border-radius:0 !important;
+    border-color:var(--rule) !important;
 }
 
 /* ---------- sidebar : ink panel ---------- */
@@ -433,7 +505,7 @@ div[class*="st-key-site_id"] input {
 [data-testid="stSidebar"] h3 {
     color:var(--paper);
 }
-[data-testid="stSidebar"] [data-testid="stExpander"] {
+[data-testid="stSidebar"] [data-testid="stExpander"] details {
     background:#1F242B;
     border:1px solid #2E353E;
 }
@@ -449,14 +521,15 @@ div[class*="st-key-site_id"] input {
 }
 [data-testid="stSidebar"] [data-baseweb="tab"] {
     font-family:var(--display);
-    letter-spacing:0.06em;
+    font-size:12px;
+    letter-spacing:0.10em;
     text-transform:uppercase;
 }
 .side-brand {
     font-family:var(--display);
-    font-size:21px;
+    font-size:18px;
     font-weight:700;
-    letter-spacing:0.10em;
+    letter-spacing:0.12em;
     text-transform:uppercase;
     color:var(--paper);
     margin-bottom:2px;
@@ -464,7 +537,7 @@ div[class*="st-key-site_id"] input {
 .side-sub {
     font-family:var(--mono);
     font-size:10px;
-    letter-spacing:0.18em;
+    letter-spacing:0.16em;
     text-transform:uppercase;
     color:#8A8F97;
     margin-bottom:14px;
@@ -473,23 +546,49 @@ div[class*="st-key-site_id"] input {
 /* ---------- scan progress block ---------- */
 .scan-label {
     font-family:var(--display);
-    font-size:20px;
+    font-size:16px;
     font-weight:600;
-    letter-spacing:0.10em;
+    letter-spacing:0.12em;
     text-transform:uppercase;
     color:var(--ink);
     margin-bottom:2px;
 }
 .scan-status {
     font-family:var(--mono);
-    font-size:12.5px;
-    letter-spacing:0.03em;
+    font-size:12px;
+    letter-spacing:0.01em;
     color:var(--muted);
 }
-.scan-status b { color:var(--amber); font-weight:600; }
+.scan-status b { color:var(--amber); font-weight:700; }
+
+/* ---------- Vega/Altair tooltip ---------- */
+#vg-tooltip-element {
+    background:var(--ink) !important;
+    color:var(--paper) !important;
+    border:1px solid var(--ink) !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    font-family:var(--body) !important;
+    font-size:12px !important;
+    padding:8px 10px !important;
+}
+#vg-tooltip-element .key,
+#vg-tooltip-element td.key {
+    color:#A9A79E !important;
+    font-weight:400 !important;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    font-size:10px !important;
+}
+#vg-tooltip-element .value,
+#vg-tooltip-element td.value {
+    color:var(--paper) !important;
+    font-family:var(--mono) !important;
+    font-weight:700 !important;
+}
 
 /* ---------- misc ---------- */
-[data-testid="stDataFrame"] { border:1px solid var(--rule); border-radius:4px; }
+[data-testid="stDataFrame"] { border:1px solid var(--rule); border-radius:0; }
 hr { border-color:var(--rule); }
 </style>
 """, unsafe_allow_html=True)
@@ -710,15 +809,127 @@ def severity_from_score(score):
         return "High"
 
 
-def severity_style(severity):
-    token = SEVERITY_TOKENS.get(severity, SEVERITY_TOKENS["Low"])
-    return token["icon"], token["bg"]
-
 def severity_color(sev):
     return SEVERITY_TOKENS.get(sev, {}).get("fg", INK)
 
-def severity_bg(sev):
-    return SEVERITY_TOKENS.get(sev, {}).get("bg", "#F3F1EA")
+
+def severity_segments(sev, width="84px"):
+    """
+    3-block severity indicator (Low | Medium | High). The block matching the
+    level is filled with the status colour; the rest stay neutral. Replaces
+    tinted pill badges so severity is read positionally, not by chip colour.
+    """
+    active = SEVERITY_ORDER.index(sev) if sev in SEVERITY_ORDER else -1
+    blocks = "".join(
+        f'<i style="background:{severity_color(sev) if i == active else RULE};"></i>'
+        for i in range(len(SEVERITY_ORDER))
+    )
+    return (
+        f'<div class="sev-seg" style="width:{width};">{blocks}</div>'
+        f'<div class="sev-label" style="color:{severity_color(sev)};">{sev}</div>'
+    )
+
+
+def risk_meter(score, threshold=7.0):
+    """
+    10-block instrument meter for a 0-10 score, with a threshold rule.
+    Flat and square - the same visual language as severity_segments().
+    """
+    colour = severity_color(severity_from_score(score))
+    blocks = ""
+    for i in range(10):
+        fill = max(0.0, min(1.0, score - i)) * 100
+        blocks += (
+            '<span class="seg">'
+            f'<span class="seg-fill" style="width:{fill:.0f}%; background:{colour};"></span>'
+            "</span>"
+        )
+    marker = f'<span class="seg-threshold" style="left:{threshold * 10:.0f}%;"></span>'
+    return f'<div class="seg-track">{blocks}{marker}</div>'
+
+
+def hazard_bar_chart(df, cat_col, val_col, cat_title, val_title, colour=None):
+    """
+    Horizontal bar chart in the app's visual language: transparent ground so
+    the paper background shows through, square amber bars, no gridlines, no
+    axis furniture, and the value set at the bar end in the mono face so the
+    chart reads at rest rather than only on hover.
+
+    Category names are drawn as text marks inside the plot area rather than as
+    y-axis labels. Vega sizes the axis-label gutter from its own text
+    measurement, which happens before the webfonts finish loading, so long
+    hazard names were being clipped. Marks inside the plot cannot be clipped
+    that way.
+    """
+    colour = colour or AMBER
+    height = max(150, 46 * len(df))
+    # headroom so the value label at the bar end is never clipped
+    vmax = float(df[val_col].max()) if len(df) else 1.0
+    domain_max = vmax * 1.12 if vmax > 0 else 1.0
+
+    # explicit order: sort="-x" cannot resolve on the label layer, whose x is a
+    # constant rather than a field
+    cat_order = list(df.sort_values(val_col, ascending=False)[cat_col])
+
+    base = alt.Chart(df).encode(
+        y=alt.Y(f"{cat_col}:N", sort=cat_order, title=None, axis=None),
+        tooltip=[
+            alt.Tooltip(f"{cat_col}:N", title=cat_title),
+            alt.Tooltip(f"{val_col}:Q", title=val_title)
+        ]
+    )
+
+    x_enc = alt.X(
+        f"{val_col}:Q",
+        title=None,
+        scale=alt.Scale(domain=[0, domain_max], nice=False),
+        axis=None
+    )
+
+    bars = base.mark_bar(color=colour, height=13, yOffset=9).encode(x=x_enc)
+
+    names = base.mark_text(
+        align="left",
+        baseline="middle",
+        dy=-9,
+        font="Inter",
+        fontSize=12,
+        color=INK
+    ).encode(x=alt.value(0), text=alt.Text(f"{cat_col}:N"))
+
+    values = base.mark_text(
+        align="left",
+        baseline="middle",
+        dx=6,
+        dy=9,
+        font="Space Mono",
+        fontSize=11,
+        fontWeight=700,
+        color=INK
+    ).encode(x=x_enc, text=alt.Text(f"{val_col}:Q"))
+
+    return (
+        (bars + names + values)
+        .properties(height=height, background="transparent")
+        .configure_view(strokeWidth=0)
+        .configure_axis(labelFont="Inter", titleFont="Inter")
+    )
+
+
+def plate(title, body_html, kind="ink", swatch=None):
+    """
+    Industrial status plate: solid strip carrying the status word, body on
+    white. Replaces the tinted left-border alert boxes.
+    kind: ink | alert | ok
+    """
+    modifier = {"ink": "", "alert": " plate--alert", "ok": " plate--ok"}.get(kind, "")
+    dot = f'<span class="swatch" style="background:{swatch};"></span>' if swatch else ""
+    return (
+        f'<div class="plate{modifier}">'
+        f'<div class="plate-strip">{dot}{title}</div>'
+        f'<div class="plate-body">{body_html}</div>'
+        "</div>"
+    )
 
 def bullets_to_html(text):
     """
@@ -1018,17 +1229,13 @@ appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
 
 if results:
     st.markdown(
-        f"""
-        <div class="callout callout-ink" style="margin-bottom:22px;">
-            <span class="mono" style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#6B6B63;">
-                Analysis complete
-            </span><br/>
-            <span style="font-size:14px;">
-                <b>{len(results)}</b> image(s) processed for site
-                <b class="mono">{site_id}</b>
-            </span>
-        </div>
-        """,
+        plate(
+            "Analysis complete",
+            f'<span class="plate-metric">{len(results)}</span>'
+            f'image(s) processed for site <span class="mono">{site_id}</span>',
+            kind="ink",
+            swatch=AMBER
+        ),
         unsafe_allow_html=True
     )
 
@@ -1138,17 +1345,12 @@ if results:
 
             # UI feedback
             st.markdown(
-                f"""
-                <div class="callout callout-red" style="margin-bottom:18px;">
-                    <span class="mono" style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase;">
-                        High risk detected
-                    </span><br/>
-                    <span style="font-size:14px;">
-                        Notification automatically sent to Safety Manager
-                        (<b>{SAFETY_MANAGER_NAME}</b> · {SAFETY_MANAGER_EMAIL})
-                    </span>
-                </div>
-                """,
+                plate(
+                    "High site risk detected",
+                    "Notification automatically sent to Safety Manager<br/>"
+                    f'<span class="mono">{SAFETY_MANAGER_NAME} · {SAFETY_MANAGER_EMAIL}</span>',
+                    kind="alert"
+                ),
                 unsafe_allow_html=True
             )
 
@@ -1227,12 +1429,7 @@ if results:
 
     col1, col2, col3 = st.columns([1, 1.5, 1.5])
 
-    risk_pct = min(max(int((weighted_score / 10) * 100), 0), 100)
-
     risk_color = severity_color(site_severity)
-    card_bg = severity_bg(site_severity)
-
-    threshold_pct = 70  # 7.0 / 10 threshold
 
     risk_note_map = {
     "High": "This site requires immediate mitigation actions.",
@@ -1248,140 +1445,26 @@ if results:
             "<div class='sec-title-small'>Overall Site Risk</div>",
             unsafe_allow_html=True
         )
-        components.html(
+        st.markdown(
             f"""
-            <!-- non-blocking font load: a hanging/blocked font host must never
-                 delay first paint of this iframe (fallback stacks below) -->
-            <link rel="stylesheet" media="print" onload="this.media='all'"
-                  href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap"/>
-            <style>
-                * {{ box-sizing:border-box; }}
-                .gauge-wrap {{
-                    background:{card_bg};
-                    border:1px solid #E3DFD5;
-                    border-radius:4px;
-                    padding:18px;
-                    font-family:'Inter',system-ui,sans-serif;
-                }}
-                .sev-row {{
-                    display:flex;
-                    align-items:center;
-                    gap:10px;
-                }}
-                .sev-dot {{
-                    width:14px;
-                    height:14px;
-                    background:{risk_color};
-                    border-radius:50%;
-                    display:inline-block;
-                    flex-shrink:0;
-                }}
-                .severity-label {{
-                    margin:0;
-                    font-family:'Barlow Condensed','Arial Narrow',sans-serif;
-                    font-size:26px;
-                    font-weight:700;
-                    letter-spacing:0.06em;
-                    text-transform:uppercase;
-                    color:{risk_color};
-                }}
-                .gauge-score {{
-                    margin:12px 0 2px 0;
-                    text-align:center;
-                    font-family:'IBM Plex Mono',monospace;
-                    font-size:52px;
-                    font-weight:600;
-                    line-height:1.05;
-                    letter-spacing:-0.03em;
-                    color:{risk_color};
-                }}
-                .gauge-denom {{
-                    font-size:22px;
-                    font-weight:500;
-                    opacity:0.6;
-                }}
-                .gauge-cap {{
-                    margin:0;
-                    text-align:center;
-                    font-family:'IBM Plex Mono',monospace;
-                    font-size:10px;
-                    letter-spacing:0.16em;
-                    text-transform:uppercase;
-                    color:#6B6B63;
-                }}
-                .gauge-note {{
-                    margin:14px 0 0 0;
-                    font-size:13px;
-                    font-weight:500;
-                    color:#161A1F;
-                    line-height:1.5;
-                }}
-                .gauge-thresh {{
-                    font-family:'IBM Plex Mono',monospace;
-                    font-size:10px;
-                    letter-spacing:0.10em;
-                    text-transform:uppercase;
-                    margin-top:12px;
-                    color:#6B6B63;
-                }}
-            </style>
-
-            <div class="gauge-wrap">
-                <div class="sev-row">
-                    <span class="sev-dot"></span>
-                    <h2 class="severity-label">{site_severity} Risk</h2>
-                </div>
-
-                <div class="gauge-score">
-                    {round(weighted_score, 1)}<span class="gauge-denom">/10</span>
-                </div>
-
-                <p class="gauge-cap">Weighted Site Risk Score</p>
-
-                <!-- Gauge -->
-                <div style="position:relative; margin-top:18px;">
-                    <div style="
-                        height:10px;
-                        background:linear-gradient(
-                            to right,
-                            #3C8F5C 0%,
-                            #F7A600 50%,
-                            #D64545 100%
-                        );
-                        border-radius:999px;
-                    "></div>
-
-                    <!-- Indicator -->
-                    <div style="
-                        position:absolute;
-                        top:-5px;
-                        left:{risk_pct}%;
-                        width:20px;
-                        height:20px;
-                        background:#161A1F;
-                        border:3px solid #FAF9F5;
-                        border-radius:50%;
-                        transform:translateX(-50%);
-                        transition:left 0.6s ease;
-                    "></div>
-
-                    <!-- Threshold Marker -->
-                    <div style="
-                        position:absolute;
-                        top:-7px;
-                        left:{threshold_pct}%;
-                        width:2px;
-                        height:24px;
-                        background:#161A1F;
-                    "></div>
-                </div>
-
-                <p class="gauge-thresh">High-risk threshold · 7.0</p>
-
-                <p class="gauge-note">{risk_note}</p>
-            </div>
-            """,
-            height=330
+<div class="card-plain">
+<div style="display:flex; align-items:baseline; gap:10px;">
+<span class="score-big" style="color:{risk_color};">{round(weighted_score, 1)}</span>
+<span class="score-denom">/ 10</span>
+</div>
+<div class="sec-title-small" style="margin:6px 0 16px 0; color:{MUTED};">Weighted Site Risk Score</div>
+{risk_meter(weighted_score)}
+<div style="display:flex; justify-content:space-between; margin-top:8px;
+font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.08em; color:{MUTED};">
+<span>0</span><span>HIGH-RISK THRESHOLD 7.0</span><span>10</span>
+</div>
+<div style="margin-top:18px; padding-top:14px; border-top:1px solid {RULE};">
+{severity_segments(site_severity, width="100%")}
+<div style="font-size:13px; line-height:1.55; color:{INK}; margin-top:10px;">{risk_note}</div>
+</div>
+</div>
+""",
+            unsafe_allow_html=True
         )
 
     with col2:
@@ -1393,11 +1476,11 @@ if results:
         if not filtered_hazards:
             st.markdown(
                 """
-                <div class="callout callout-green">
-                    <b>No recurring hazards detected</b><br/>
-                    <span style="font-size:13px;">
+                <div class="plate plate--ok">
+                    <div class="plate-strip">No recurring hazards</div>
+                    <div class="plate-body">
                         No hazards were identified in this site inspection.
-                    </span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1407,44 +1490,13 @@ if results:
                 filtered_hazards, columns=["HAZARD_CATEGORY", "IMAGE_COUNT"]
             )
 
-            hazard_chart = (
-                alt.Chart(hazard_df)
-                .mark_bar(color=AMBER, cornerRadiusEnd=3, height=18)
-                .encode(
-                    y=alt.Y(
-                        "HAZARD_CATEGORY:N",
-                        sort="-x",
-                        title=None,
-                        axis=alt.Axis(
-                            labelColor=INK,
-                            labelFontSize=12,
-                            labelLimit=220,
-                            domainColor=INK,
-                            ticks=False
-                        )
-                    ),
-                    x=alt.X(
-                        "IMAGE_COUNT:Q",
-                        title="Images",
-                        axis=alt.Axis(
-                            tickMinStep=1,
-                            labelColor="#6B6B63",
-                            titleColor="#6B6B63",
-                            titleFontSize=11,
-                            grid=False,
-                            domainColor=INK
-                        )
-                    ),
-                    tooltip=[
-                        alt.Tooltip("HAZARD_CATEGORY:N", title="Hazard"),
-                        alt.Tooltip("IMAGE_COUNT:Q", title="Images")
-                    ]
-                )
-                .properties(height=max(140, 30 * len(filtered_hazards)))
-                .configure_view(strokeWidth=0)
+            hazard_chart = hazard_bar_chart(
+                hazard_df, "HAZARD_CATEGORY", "IMAGE_COUNT", "Hazard", "Images"
             )
 
-            st.altair_chart(hazard_chart, use_container_width=True)
+            # theme=None keeps Streamlit's default chart theme from overriding
+            # the fonts and colours configured above
+            st.altair_chart(hazard_chart, use_container_width=True, theme=None)
 
     with col3:
         st.markdown(
@@ -1455,11 +1507,11 @@ if results:
         if not site_has_hazards:
             st.markdown(
                 """
-                <div class="callout callout-green">
-                    <b>No corrective actions required</b><br/>
-                    <span style="font-size:13px;">
+                <div class="plate plate--ok">
+                    <div class="plate-strip">No corrective actions required</div>
+                    <div class="plate-body">
                         No safety hazards were identified across submitted images.
-                    </span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1509,7 +1561,6 @@ if results:
     for idx, item in enumerate(results, start=1):
         sev = item["severity"]
         sev_fg = severity_color(sev)
-        sev_bg = severity_bg(sev)
 
         with st.container(border=True):
 
@@ -1534,10 +1585,8 @@ if results:
                 st.markdown(
                     f"""
                     <div class="img-id">IMG {idx:02d} · {item['image_name']}</div>
-                    <div style="margin:8px 0 10px 0;">
-                        <span class="chip" style="background:{sev_bg}; color:{sev_fg};">
-                            {sev} Risk
-                        </span>
+                    <div style="margin:10px 0 12px 0; max-width:120px;">
+                        {severity_segments(sev, width="120px")}
                     </div>
                     <div>{tags_html}</div>
                     """,
@@ -1587,8 +1636,9 @@ if results:
                     if not item["has_potential_hazard"]:
                         st.markdown(
                             """
-                            <div class="callout callout-green">
-                                ✅ No hazards detected in this image
+                            <div class="plate plate--ok">
+                                <div class="plate-strip">Clear</div>
+                                <div class="plate-body">No hazards detected in this image.</div>
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -1618,8 +1668,9 @@ if results:
                     if not item["has_potential_hazard"]:
                         st.markdown(
                             """
-                            <div class="callout callout-green">
-                                ✅ No corrective actions required for this image
+                            <div class="plate plate--ok">
+                                <div class="plate-strip">Clear</div>
+                                <div class="plate-body">No corrective actions required.</div>
                             </div>
                             """,
                             unsafe_allow_html=True
@@ -1720,12 +1771,10 @@ if results:
                     <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em;">
                         Previous Inspection
                     </div>
-                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
+                    <div class="score-big" style="margin:8px 0 12px 0; color:{severity_color(prev["Severity"])};">
                         {prev["Weighted Score"]}<span class="score-denom">/10</span>
                     </div>
-                    <span class="chip" style="background:{severity_bg(prev["Severity"])}; color:{severity_color(prev["Severity"])};">
-                        {prev["Severity"]}
-                    </span>
+                    {severity_segments(prev["Severity"])}
                     <div class="img-id" style="margin-top:12px;">
                         {prev["Date & Time"]}
                     </div>
@@ -1741,12 +1790,10 @@ if results:
                     <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em;">
                         Recent Average
                     </div>
-                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
+                    <div class="score-big" style="margin:8px 0 12px 0; color:{severity_color(avg_severity)};">
                         {avg_score}<span class="score-denom">/10</span>
                     </div>
-                    <span class="chip" style="background:{severity_bg(avg_severity)}; color:{severity_color(avg_severity)};">
-                        {avg_severity}
-                    </span>
+                    {severity_segments(avg_severity)}
                     <div class="img-id" style="margin-top:12px;">
                         Last 3 inspections
                     </div>
@@ -1760,15 +1807,13 @@ if results:
             st.markdown(
                 f"""
                 <div class="card" style="border:2px solid {INK};">
-                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em; color:{AMBER};">
+                    <div class="score-denom" style="text-transform:uppercase; letter-spacing:0.14em; color:{INK};">
                         Current Inspection
                     </div>
-                    <div class="score-big" style="margin:8px 0 8px 0; color:#161A1F;">
+                    <div class="score-big" style="margin:8px 0 12px 0; color:{severity_color(curr["Severity"])};">
                         {curr["Weighted Score"]}<span class="score-denom">/10</span>
                     </div>
-                    <span class="chip" style="background:{severity_bg(curr["Severity"])}; color:{severity_color(curr["Severity"])};">
-                        {curr["Severity"]}
-                    </span>
+                    {severity_segments(curr["Severity"])}
                     <div class="img-id" style="margin-top:12px;">
                         {curr["Date & Time"]}
                     </div>
@@ -1780,19 +1825,25 @@ if results:
         st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
 
         if diff > 0:
-            trend_html = (
-                f'<div class="callout callout-red">▲ Site risk <b>increased by {diff} points</b> '
-                f'compared to the previous inspection.</div>'
+            trend_html = plate(
+                "Site risk increased",
+                f'<span class="plate-metric" style="color:{RED};">&#9650; {diff}</span>'
+                'points versus the previous inspection.',
+                kind="alert"
             )
         elif diff < 0:
-            trend_html = (
-                f'<div class="callout callout-green">▼ Site risk <b>decreased by {abs(diff)} points</b> '
-                f'compared to the previous inspection.</div>'
+            trend_html = plate(
+                "Site risk decreased",
+                f'<span class="plate-metric" style="color:{GREEN};">&#9660; {abs(diff)}</span>'
+                'points versus the previous inspection.',
+                kind="ok"
             )
         else:
-            trend_html = (
-                '<div class="callout callout-ink">■ Site risk <b>remains unchanged</b> '
-                'compared to the previous inspection.</div>'
+            trend_html = plate(
+                "Site risk unchanged",
+                '<span class="plate-metric">0.0</span>'
+                'points versus the previous inspection.',
+                kind="ink"
             )
 
         st.markdown(trend_html, unsafe_allow_html=True)
@@ -1826,7 +1877,7 @@ if results:
 
         if hazard_trend_df.empty:
             st.markdown(
-                '<div class="callout callout-ink">No historical hazard data available yet.</div>',
+                plate("No history", "No historical hazard data available yet.", kind="ink"),
                 unsafe_allow_html=True
             )
         else:
@@ -1835,45 +1886,12 @@ if results:
                 "TOTAL_COUNT", ascending=False
             )
 
-            chart = (
-                alt.Chart(hazard_trend_df)
-                .mark_bar(color=INK, cornerRadiusEnd=3)
-                .encode(
-                    x=alt.X(
-                        "HAZARD_CATEGORY:N",
-                        sort="-y",
-                        title="Hazard Category",
-                        axis=alt.Axis(
-                            labelAngle=-30,
-                            labelColor=INK,
-                            titleColor="#6B6B63",
-                            titleFontSize=11,
-                            domainColor=INK,
-                            ticks=False
-                        )
-                    ),
-                    y=alt.Y(
-                        "TOTAL_COUNT:Q",
-                        title="Total Occurrences",
-                        axis=alt.Axis(
-                            tickMinStep=1,
-                            labelColor="#6B6B63",
-                            titleColor="#6B6B63",
-                            titleFontSize=11,
-                            gridColor="#E3DFD5",
-                            domainColor=INK
-                        )
-                    ),
-                    tooltip=[
-                        alt.Tooltip("HAZARD_CATEGORY:N", title="Hazard"),
-                        alt.Tooltip("TOTAL_COUNT:Q", title="Occurrences")
-                    ]
-                )
-                .properties(height=320)
-                .configure_view(strokeWidth=0)
+            chart = hazard_bar_chart(
+                hazard_trend_df, "HAZARD_CATEGORY", "TOTAL_COUNT",
+                "Hazard", "Occurrences"
             )
 
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, use_container_width=True, theme=None)
 
 
     # --------------------------------------------------
