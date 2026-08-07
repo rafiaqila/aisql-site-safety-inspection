@@ -367,21 +367,22 @@ div[class*="st-key-site_id"] input {
 }
 
 /* ---------- tags ---------- */
-.tag {
-    display:inline-block;
+.hazard-list {
     font-size:13px;
-    font-weight:500;
-    color:var(--ink);
-    background:#F3F1EA;
-    border:1px solid var(--rule);
-    padding:3px 9px;
-    margin:0 6px 6px 0;
+    line-height:1.75;
+    color:var(--muted);
+    letter-spacing:0.01em;
 }
-.tag-clear {
-    background:#EAF3EC;
-    border-color:#C5DFCC;
+.hazard-list .sep {
+    color:var(--rule);
+    margin:0 8px;
+}
+.hazard-clear {
+    font-size:13px;
+    line-height:1.75;
     color:var(--green);
     font-weight:600;
+    letter-spacing:0.01em;
 }
 
 /* ---------- lists ---------- */
@@ -497,6 +498,11 @@ div[class*="st-key-site_id"] input {
 [data-testid="stVerticalBlock"] {
     border-radius:0 !important;
     border-color:var(--rule) !important;
+}
+/* card containers carry a "card_" key so padding can be widened without
+   touching every vertical block on the page */
+div[class*="st-key-card_"] {
+    padding:22px !important;
 }
 
 /* ---------- sidebar : ink panel ---------- */
@@ -649,7 +655,7 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    with st.expander("ℹ️", expanded=False):
+    with st.expander("System Info", expanded=False):
         tab_model, tab_limits, tab_fn, tab_sev = st.tabs(
             ["Model", "Limits", "AI SQL", "Severity"]
         )
@@ -666,7 +672,7 @@ with st.sidebar:
             - Strong performance on image understanding + text generation
             """)
 
-            st.caption("🔒 Model fixed to Claude Sonnet 4.0 for consistency and auditability")
+            st.caption("Model fixed to Claude Sonnet 4.0 for consistency and auditability")
 
         # ------------------------------
         # MODEL LIMITATIONS
@@ -951,7 +957,11 @@ def hazard_bar_chart(df, cat_col, val_col, cat_title, val_title, colour=None):
 
     return (
         (bars + names + values)
-        .properties(height=height, background="transparent")
+        .properties(
+            height=height,
+            background="transparent",
+            padding={"left": 2, "right": 12, "top": 6, "bottom": 6}
+        )
         .configure_view(strokeWidth=0)
         .configure_axis(labelFont="Inter", titleFont="Inter")
     )
@@ -1056,25 +1066,6 @@ def build_corrective_actions_checklist(results):
 
     return df
 
-HAZARD_EMOJI = {
-    "Missing PPE": "🦺",
-    "Fall Risk": "⬇️",
-    "Fire or Explosion Hazard": "🔥",
-    "Electrical Hazard": "⚡",
-    "Trip or Slip Hazard": "⚠️",
-    "Equipment Safety Issue": "🛠️",
-    "Improper Storage": "📦",
-    "Poor Housekeeping": "🧹",
-    "Inadequate Ventilation": "🌬️",
-    "Chemical Exposure": "☣️",
-    "Structural Hazard": "🏗️",
-    "Poor Lighting": "💡",
-    "Ergonomic Hazard": "🪑",
-    "Struck-by Hazard": "💥",
-    "Caught-in or Between Hazard": "🪤",
-    "No Visible Hazard": "✅"
-}
-
 # --------------------------------------------------
 # MAIN ANALYSIS LOGIC
 # --------------------------------------------------
@@ -1082,11 +1073,11 @@ results = st.session_state.analysis_results
 
 if analyze_btn:
     if not site_id.strip():
-        st.error("❌ Site ID is required.")
+        st.error("Site ID is required.")
         st.stop()
 
     if not uploaded_files:
-        st.error("❌ Please upload at least one site inspection image.")
+        st.error("Please upload at least one site inspection image.")
         st.stop()
 
     results.clear()
@@ -1397,7 +1388,7 @@ if results:
             )
 
         except Exception as e:
-            st.error("❌ Failed to send automated safety alert.")
+            st.error("Failed to send automated safety alert.")
             st.exception(e)
 
     # --------------------------------------------------
@@ -1487,7 +1478,7 @@ if results:
             "<div class='sec-title-small'>Overall Site Risk</div>",
             unsafe_allow_html=True
         )
-        with st.container(border=True):
+        with st.container(border=True, key="card_risk"):
             st.markdown(
                 f"""
 <div>
@@ -1541,7 +1532,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
 
             # same bordered container as the sibling columns so the three read
             # as one group rather than two cards and a floating chart
-            with st.container(border=True):
+            with st.container(border=True, key="card_hazards"):
                 # theme=None keeps Streamlit's default chart theme from
                 # overriding the fonts and colours configured above
                 st.altair_chart(hazard_chart, use_container_width=True, theme=None)
@@ -1568,7 +1559,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
             action_lines = parse_bullet_lines(prioritized_actions)
             actions_html = "".join(f"<li>{line}</li>" for line in action_lines)
 
-            with st.container(border=True):
+            with st.container(border=True, key="card_actions"):
                 st.markdown(
                     f"""
                     <ul class="rank-list">
@@ -1609,7 +1600,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
         sev = item["severity"]
         sev_fg = severity_color(sev)
 
-        with st.container(border=True):
+        with st.container(border=True, key=f"card_image_{idx}"):
 
             # Hazard-stripe border accent : high-severity cards only
             if sev == "High":
@@ -1622,11 +1613,12 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
 
             with c_meta:
                 if not item["has_potential_hazard"]:
-                    tags_html = '<span class="tag tag-clear">✅ No Visible Hazard</span>'
+                    tags_html = '<span class="hazard-clear">No visible hazard</span>'
                 else:
-                    tags_html = "".join(
-                        f'<span class="tag">{HAZARD_EMOJI.get(c, "⚠️")} {c}</span>'
-                        for c in item["hazard_categories"]
+                    tags_html = (
+                        '<span class="hazard-list">'
+                        + '<span class="sep">/</span>'.join(item["hazard_categories"])
+                        + "</span>"
                     )
 
                 st.markdown(
@@ -1874,14 +1866,14 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
         if diff > 0:
             trend_html = plate(
                 "Site risk increased",
-                f'<span class="plate-metric" style="color:{RED};">&#9650; {diff}</span>'
+                f'<span class="plate-metric" style="color:{RED};">{diff}</span>'
                 'points versus the previous inspection.',
                 kind="alert"
             )
         elif diff < 0:
             trend_html = plate(
                 "Site risk decreased",
-                f'<span class="plate-metric" style="color:{GREEN};">&#9660; {abs(diff)}</span>'
+                f'<span class="plate-metric" style="color:{GREEN};">{abs(diff)}</span>'
                 'points versus the previous inspection.',
                 kind="ok"
             )
@@ -2067,7 +2059,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
     # DOWNLOAD REPORT
     # --------------------------------------------------
     with col_dl:
-        with st.container(border=True):
+        with st.container(border=True, key="card_download"):
             st.markdown(
                 """
                 <div class="sec-title-small">Download Report</div>
@@ -2084,7 +2076,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                 <a class="dl-link"
                    href="data:text/html;base64,{b64}"
                    download="site_safety_report_{site_id}.html">
-                    ⬇ Site Safety Report (HTML)
+                    Site Safety Report (HTML)
                 </a>
                 """,
                 unsafe_allow_html=True
@@ -2094,7 +2086,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
     # SEND VIA EMAIL
     # --------------------------------------------------
     with col_email:
-        with st.container(border=True):
+        with st.container(border=True, key="card_email"):
             st.markdown(
                 """
                 <div class="sec-title-small">Send via Email</div>
@@ -2159,8 +2151,8 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                             """
                         ).collect()
 
-                        st.success(f"✅ Assessment successfully sent to {recipient_email}")
+                        st.success(f"Assessment successfully sent to {recipient_email}")
 
                     except Exception as e:
-                        st.error("❌ Failed to send email.")
+                        st.error("Failed to send email.")
                         st.exception(e)
