@@ -847,6 +847,18 @@ def extract_labels(value):
             return [value]
     return []
 
+def parse_risk_score(raw_value):
+    """
+    Extract the first integer (clamped 0-10) from an AI_COMPLETE risk-score
+    response. Returns None if the response contains no digits at all - e.g.
+    a refusal or an explanatory preamble the model gave despite being told
+    to return ONLY an integer. Callers must not assume a match.
+    """
+    match = re.search(r"\d+", str(raw_value))
+    if match is None:
+        return None
+    return min(10, max(0, int(match.group())))
+
 def severity_from_score(score):
     if score < 4:
         return "Low"
@@ -1225,8 +1237,36 @@ appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
 
         row = session.sql(query).collect()[0]
 
-        score = int(re.search(r"\d+", str(row["RISK_SCORE"])).group())
-        severity = severity_from_score(score)
+        score = parse_risk_score(row["RISK_SCORE"])
+
+        if score is None:
+            # AI_COMPLETE occasionally returns a non-numeric response (a
+            # refusal or explanatory text) despite being told to return ONLY
+            # an integer. Retry the same risk-score call once - this reuses
+            # the identical prompt already used above, not a new AI logic
+            # path - before giving up on this image.
+            set_status(
+                image_index,
+                uploaded_file.name,
+                "AI_COMPLETE — risk score did not parse, retrying"
+            )
+            retry_query = f"""
+            SELECT
+                AI_COMPLETE(
+                    'claude-4-sonnet',
+                    'Return ONLY a single integer risk score from 0 to 10.',
+                    TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
+                ) AS risk_score
+            """
+            retry_row = session.sql(retry_query).collect()[0]
+            score = parse_risk_score(retry_row["RISK_SCORE"])
+
+        # Still unparseable after the retry. Do not crash the scan, and do
+        # not silently default to 0 - in a safety application that would
+        # mislabel a possibly real hazard as "Low risk". Surface it as its
+        # own state instead; severity_color()/severity_segments() already
+        # degrade gracefully for a severity outside SEVERITY_ORDER.
+        severity = severity_from_score(score) if score is not None else "Unknown"
 
         results.append({
             "image_name": uploaded_file.name,
@@ -1318,11 +1358,17 @@ if results:
     # SITE-WIDE AGGREGATES
     # --------------------------------------------------
     weights = {"Low": 1, "Medium": 2, "High": 3}
-    weighted_score = sum(
-        item["score"] * weights[item["severity"]] for item in results
-    ) / sum(weights[item["severity"]] for item in results)
-
-    site_severity = severity_from_score(weighted_score)
+    # Images whose risk score never parsed (severity "Unknown") are excluded
+    # from the weighted average - there is no numeric score to weight.
+    scored_results = [r for r in results if r["score"] is not None]
+    if scored_results:
+        weighted_score = sum(
+            item["score"] * weights[item["severity"]] for item in scored_results
+        ) / sum(weights[item["severity"]] for item in scored_results)
+        site_severity = severity_from_score(weighted_score)
+    else:
+        weighted_score = 0.0
+        site_severity = "Unknown"
 
 
     # --------------------------------------------------
@@ -1633,12 +1679,17 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                 )
 
             with c_score:
+                score_html = (
+                    f"{item['score']}<span class=\"score-denom\">/10</span>"
+                    if item["score"] is not None
+                    else '<span class="score-denom">N/A</span>'
+                )
                 st.markdown(
                     f"""
                     <div style="text-align:right;">
                         <span class="score-label">Risk Score</span>
                         <span class="score-badge" style="color:{sev_fg};">
-                            {item['score']}<span class="score-denom">/10</span>
+                            {score_html}
                         </span>
                     </div>
                     """,
@@ -1732,7 +1783,11 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
     # --------------------------------------------------
     # SECTION: SITE RISK HISTORY
     # --------------------------------------------------
-    highest_image_score = max(item["score"] for item in results)
+    # SITE_RISK_HISTORY.HIGHEST_IMAGE_SCORE is a non-null numeric column, so
+    # this can't insert an "Unknown" image's score of None - fall back to 0
+    # only if every image on this run failed to parse a score.
+    scored_scores = [item["score"] for item in results if item["score"] is not None]
+    highest_image_score = max(scored_scores) if scored_scores else 0
 
     session.sql(f"""
     INSERT INTO SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_RISK_HISTORY
@@ -1995,13 +2050,14 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
 
     for r in results:
         img = base64.b64encode(r["image_bytes"]).decode()
+        report_score = r["score"] if r["score"] is not None else "N/A"
         html += f"""
         <tr>
             <td>
                 <img src="data:image/jpeg;base64,{img}" width="160"/><br/>
                 {r['image_name']}
             </td>
-            <td>{r['score']}</td>
+            <td>{report_score}</td>
             <td>{r['severity']}</td>
             <td>{", ".join(r['hazard_categories'])}</td>
         </tr>
