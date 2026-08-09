@@ -1058,6 +1058,33 @@ def parse_bullet_lines(text):
 
     return lines
 
+# icon per hazard category - used only for the per-image hazard tag line and
+# the "Hazards In This Inspection" chart labels, matching the fixed
+# AI_CLASSIFY label vocabulary above
+HAZARD_EMOJI = {
+    "Missing PPE": "🦺",
+    "Fall Risk": "⬇️",
+    "Fire or Explosion Hazard": "🔥",
+    "Electrical Hazard": "⚡",
+    "Trip or Slip Hazard": "⚠️",
+    "Equipment Safety Issue": "🛠️",
+    "Improper Storage": "📦",
+    "Poor Housekeeping": "🧹",
+    "Inadequate Ventilation": "🌬️",
+    "Chemical Exposure": "☣️",
+    "Structural Hazard": "🏗️",
+    "Poor Lighting": "💡",
+    "Ergonomic Hazard": "🪑",
+    "Struck-by Hazard": "💥",
+    "Caught-in or Between Hazard": "🪤",
+    "Vehicle or Mobile Equipment Hazard": "🚧",
+    "No Visible Hazard": "✅"
+}
+
+
+def with_hazard_icon(category):
+    return f"{HAZARD_EMOJI.get(category, '⚠️')} {category}"
+
 def build_corrective_actions_checklist(results):
     """
     Build a deduplicated corrective actions checklist
@@ -1656,7 +1683,8 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
             )
         else:
             hazard_df = pd.DataFrame(
-                filtered_hazards, columns=["HAZARD_CATEGORY", "IMAGE_COUNT"]
+                [(with_hazard_icon(h), c) for h, c in filtered_hazards],
+                columns=["HAZARD_CATEGORY", "IMAGE_COUNT"]
             )
 
             hazard_chart = hazard_bar_chart(
@@ -1750,7 +1778,9 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                 else:
                     tags_html = (
                         '<span class="hazard-list">'
-                        + '<span class="sep">/</span>'.join(item["hazard_categories"])
+                        + '<span class="sep">/</span>'.join(
+                            with_hazard_icon(c) for c in item["hazard_categories"]
+                        )
                         + "</span>"
                     )
 
