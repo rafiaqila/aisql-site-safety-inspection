@@ -38,6 +38,10 @@ GREEN = "#3C8F5C"
 RULE = "#E3DFD5"
 MUTED = "#6B6B63"
 
+# Cortex's documented per-image limit (see sidebar "Model Limitations" copy).
+# Uploads over this are rejected before spending an AI_COMPLETE call on them.
+MAX_IMAGE_BYTES = int(3.75 * 1024 * 1024)
+
 SEVERITY_TOKENS = {
     "Low":    {"fg": GREEN},
     "Medium": {"fg": AMBER},
@@ -336,7 +340,7 @@ div[class*="st-key-site_id"] input {
 }
 .score-badge {
     font-family:var(--mono);
-    font-size:34px;
+    font-size:52px;
     font-weight:700;
     line-height:1;
     padding:8px 0 4px 0;
@@ -344,14 +348,14 @@ div[class*="st-key-site_id"] input {
 }
 .score-denom {
     font-family:var(--mono);
-    font-size:13px;
+    font-size:15px;
     font-weight:400;
     color:var(--muted);
     letter-spacing:0.04em;
 }
 .score-label {
     font-family:var(--display);
-    font-size:14px;
+    font-size:16px;
     font-weight:600;
     letter-spacing:0.10em;
     text-transform:uppercase;
@@ -665,14 +669,14 @@ with st.sidebar:
         # ------------------------------
         with tab_model:
             st.markdown("""
-            **Claude Sonnet 4.0**
+            **Claude Sonnet 5**
 
             - Vision capable large language model
             - Optimized for structured reasoning and safety analysis
             - Strong performance on image understanding + text generation
             """)
 
-            st.caption("Model fixed to Claude Sonnet 4.0 for consistency and auditability")
+            st.caption("Model fixed to Claude Sonnet 5 for consistency and auditability")
 
         # ------------------------------
         # MODEL LIMITATIONS
@@ -683,7 +687,7 @@ with st.sidebar:
             their **context window**, input size, and output capacity.
 
             ### Context Window
-            - **Claude Sonnet 4.0** supports a **200,000 token context window**
+            - **Claude Sonnet 5** supports a **200,000 token context window**
             - Tokens include:
                 - Image content
                 - Prompt instructions
@@ -797,8 +801,11 @@ with in_col_files:
 analyze_btn = st.button(
     "Analyze Site",
     use_container_width=True,
-    type="primary"
+    type="primary",
+    disabled=(not site_id.strip() or not uploaded_files)
 )
+if not site_id.strip() or not uploaded_files:
+    st.caption("Enter a Site ID and upload at least one image to enable analysis.")
 
 st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
 
@@ -1049,6 +1056,8 @@ def build_corrective_actions_checklist(results):
     for item in results:
         if item["hazard_categories"] == ["No Visible Hazard"]:
             continue
+        if item["recommended_actions"] is None:
+            continue
 
         raw_actions = str(item["recommended_actions"])
         raw_actions = raw_actions.replace("\\n", "\n").strip().strip('"').strip("'")
@@ -1090,6 +1099,15 @@ if analyze_btn:
 
     if not uploaded_files:
         st.error("Please upload at least one site inspection image.")
+        st.stop()
+
+    oversized = [f.name for f in uploaded_files if len(f.getvalue()) > MAX_IMAGE_BYTES]
+    if oversized:
+        st.error(
+            "The following image(s) exceed Cortex's ~3.75 MB per-image limit "
+            "and cannot be analyzed: " + ", ".join(oversized) +
+            ". Remove or resize them and try again."
+        )
         st.stop()
 
     results.clear()
@@ -1181,7 +1199,7 @@ if analyze_btn:
         query = f"""
 SELECT
     AI_COMPLETE(
-        'claude-4-sonnet',
+        'claude-sonnet-5',
         'Return ONLY a single integer risk score from 0 to 10.',
         TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
     ) AS risk_score,
@@ -1204,7 +1222,7 @@ SELECT
     ) AS hazard_categories,
 
     AI_COMPLETE(
-        'claude-4-sonnet',
+        'claude-sonnet-5',
         'List all specific safety hazards visible in this image. Use this exact format:
 - [Hazard 1]
 - [Hazard 2]
@@ -1215,7 +1233,7 @@ Do not include any introductory text. Bold keywords. Start directly with the fir
     ) AS detected_hazards,
 
     AI_COMPLETE(
-        'claude-4-sonnet',
+        'claude-sonnet-5',
         'Provide specific corrective actions for the hazards in this image. Use this exact format:
 - [Action 1]
 - [Action 2]
@@ -1226,7 +1244,7 @@ Do not include any introductory text. Bold keywords. Start directly with the fir
     ) AS recommended_actions,
 
     AI_COMPLETE(
-        'claude-4-sonnet',
+        'claude-sonnet-5',
         'Explain concisely why this image received its risk score.
 Reference specific visible conditions and explain how they contribute
 to the level of risk. Keep the explanation factual, neutral, and
@@ -1238,34 +1256,85 @@ appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
         row = session.sql(query).collect()[0]
 
         score = parse_risk_score(row["RISK_SCORE"])
+        detected_hazards = row["DETECTED_HAZARDS"]
+        recommended_actions = row["RECOMMENDED_ACTIONS"]
+        risk_explanation_raw = row["RISK_EXPLANATION"]
 
-        if score is None:
-            # AI_COMPLETE occasionally returns a non-numeric response (a
-            # refusal or explanatory text) despite being told to return ONLY
-            # an integer. Retry the same risk-score call once - this reuses
-            # the identical prompt already used above, not a new AI logic
-            # path - before giving up on this image.
+        if (
+            score is None
+            or detected_hazards is None
+            or recommended_actions is None
+            or risk_explanation_raw is None
+        ):
+            # AI_COMPLETE occasionally returns null for one or more of these
+            # four fields on a given image - e.g. a refusal, or the file
+            # exceeding Cortex's per-image size limit - even though
+            # AI_CLASSIFY, a different function in the same query, succeeds.
+            # Retry the four AI_COMPLETE fields together once, reusing the
+            # identical prompts/model already used above (not a new AI logic
+            # path), before accepting the gap.
             set_status(
                 image_index,
                 uploaded_file.name,
-                "AI_COMPLETE — risk score did not parse, retrying"
+                "AI_COMPLETE — incomplete response, retrying"
             )
             retry_query = f"""
             SELECT
                 AI_COMPLETE(
-                    'claude-4-sonnet',
+                    'claude-sonnet-5',
                     'Return ONLY a single integer risk score from 0 to 10.',
                     TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
-                ) AS risk_score
+                ) AS risk_score,
+
+                AI_COMPLETE(
+                    'claude-sonnet-5',
+                    'List all specific safety hazards visible in this image. Use this exact format:
+- [Hazard 1]
+- [Hazard 2]
+- [Hazard 3]
+
+Do not include any introductory text. Bold keywords. Start directly with the first dash.',
+                    TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
+                ) AS detected_hazards,
+
+                AI_COMPLETE(
+                    'claude-sonnet-5',
+                    'Provide specific corrective actions for the hazards in this image. Use this exact format:
+- [Action 1]
+- [Action 2]
+- [Action 3]
+
+Do not include any introductory text. Bold keywords. Start directly with the first dash.',
+                    TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
+                ) AS recommended_actions,
+
+                AI_COMPLETE(
+                    'claude-sonnet-5',
+                    'Explain concisely why this image received its risk score.
+Reference specific visible conditions and explain how they contribute
+to the level of risk. Keep the explanation factual, neutral, and
+appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
+                    TO_FILE('@SYNOGIZE_DB.AISQL_SITE_SAFETY.SAFETY_IMG_STG','{file_name}')
+                ) AS risk_explanation
             """
             retry_row = session.sql(retry_query).collect()[0]
-            score = parse_risk_score(retry_row["RISK_SCORE"])
 
-        # Still unparseable after the retry. Do not crash the scan, and do
-        # not silently default to 0 - in a safety application that would
-        # mislabel a possibly real hazard as "Low risk". Surface it as its
-        # own state instead; severity_color()/severity_segments() already
-        # degrade gracefully for a severity outside SEVERITY_ORDER.
+            if score is None:
+                score = parse_risk_score(retry_row["RISK_SCORE"])
+            if detected_hazards is None:
+                detected_hazards = retry_row["DETECTED_HAZARDS"]
+            if recommended_actions is None:
+                recommended_actions = retry_row["RECOMMENDED_ACTIONS"]
+            if risk_explanation_raw is None:
+                risk_explanation_raw = retry_row["RISK_EXPLANATION"]
+
+        # Still incomplete after the retry. Do not crash the scan, and do
+        # not silently default the score to 0 or the text fields to the
+        # literal string "None" - in a safety application, quietly
+        # downplaying or fabricating a possibly real hazard is the wrong
+        # failure mode. Each field surfaces its own gap instead;
+        # severity_color()/severity_segments() already degrade gracefully
+        # for a severity outside SEVERITY_ORDER.
         severity = severity_from_score(score) if score is not None else "Unknown"
 
         results.append({
@@ -1274,16 +1343,22 @@ appropriate for a safety inspection report. Limit to a short 1–2 sentences.',
             "score": score,
             "severity": severity,
             "hazard_categories": extract_labels(row["HAZARD_CATEGORIES"]),
-            "detected_hazards": row["DETECTED_HAZARDS"],
-            "recommended_actions": row["RECOMMENDED_ACTIONS"],
+            "detected_hazards": detected_hazards,
+            "recommended_actions": recommended_actions,
             "risk_explanation": (
-                str(row["RISK_EXPLANATION"])
+                str(risk_explanation_raw)
                 .replace("\\n", " ")
                 .replace('"', "")
                 .replace("'", "")
                 .strip()
-            ),
-            "has_potential_hazard": True
+            ) if risk_explanation_raw is not None else None,
+            "has_potential_hazard": True,
+            "ai_incomplete": (
+                score is None
+                or detected_hazards is None
+                or recommended_actions is None
+                or risk_explanation_raw is None
+            )
         })
 
         step += 1
@@ -1469,7 +1544,7 @@ if results:
 
             prioritized_actions_query = f"""
             SELECT AI_COMPLETE(
-                'claude-4-sonnet',
+                'claude-sonnet-5',
                 'You are a site safety expert.
     Based on the following site-wide hazards and observations, generate a prioritized list
     of the TOP 3 corrective actions.
@@ -1696,18 +1771,35 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                     unsafe_allow_html=True
                 )
 
+            if item.get("ai_incomplete"):
+                st.markdown(
+                    plate(
+                        "AI analysis incomplete",
+                        "One or more AI SQL functions did not return a result for this "
+                        "image after a retry. Missing fields are marked below - manual "
+                        "review is recommended.",
+                        kind="alert"
+                    ),
+                    unsafe_allow_html=True
+                )
+
             # --------------------------------------------------
             # COLLAPSED DETAIL
             # --------------------------------------------------
             with st.expander("Detail", expanded=False):
 
                 # ----- WHY THIS SCORE -----
+                explanation_html = (
+                    item['risk_explanation']
+                    if item['risk_explanation'] is not None
+                    else '<span style="color:var(--muted);">Not available - the AI SQL function did not return an explanation for this image.</span>'
+                )
                 st.markdown(
                     f"""
                     <div class="card-flat" style="margin-bottom:14px;">
                         <div class="sec-title-small">Why this risk score</div>
                         <div style="font-size:13.5px; line-height:1.65; color:#161A1F;">
-                            {item['risk_explanation']}
+                            {explanation_html}
                         </div>
                     </div>
                     """,
@@ -1731,6 +1823,15 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                                 <div class="plate-body">No hazards detected in this image.</div>
                             </div>
                             """,
+                            unsafe_allow_html=True
+                        )
+                    elif item["detected_hazards"] is None:
+                        st.markdown(
+                            plate(
+                                "Not available",
+                                "The AI SQL function did not return a hazard list for this image.",
+                                kind="alert"
+                            ),
                             unsafe_allow_html=True
                         )
                     else:
@@ -1763,6 +1864,15 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                                 <div class="plate-body">No corrective actions required.</div>
                             </div>
                             """,
+                            unsafe_allow_html=True
+                        )
+                    elif item["recommended_actions"] is None:
+                        st.markdown(
+                            plate(
+                                "Not available",
+                                "The AI SQL function did not return corrective actions for this image.",
+                                kind="alert"
+                            ),
                             unsafe_allow_html=True
                         )
                     else:
