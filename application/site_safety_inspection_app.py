@@ -825,6 +825,18 @@ if "email_status_type" not in st.session_state:
 # --------------------------------------------------
 # HELPERS
 # --------------------------------------------------
+def sql_escape(value):
+    """
+    Escape single quotes for safe interpolation into a single-quoted SQL
+    string literal (ANSI/Snowflake standard: '' represents a literal ').
+    Applies to anything not fully within our control before it reaches a
+    f-string SQL statement: user input (Site ID, recipient email) and
+    AI-generated free text (hazard summaries, recommended actions) - a
+    single apostrophe in either breaks the statement's syntax otherwise.
+    """
+    return str(value).replace("'", "''")
+
+
 def upload_image_to_stage(uploaded_file):
     image_id = f"IMG_{uuid.uuid4().hex[:8]}"
     ext = uploaded_file.name.split(".")[-1].lower()
@@ -1422,9 +1434,9 @@ if results:
                 HAZARD_COUNT
             )
             VALUES (
-                '{site_id}',
+                '{sql_escape(site_id)}',
                 '{inspection_ts}',
-                '{hazard}',
+                '{sql_escape(hazard)}',
                 {count}
             )
         """).collect()
@@ -1488,7 +1500,7 @@ if results:
                 CALL SYSTEM$SEND_EMAIL(
                     'SITE_EMAIL_INT',
                     '{SAFETY_MANAGER_EMAIL}',
-                    '⚠️ High Site Risk Alert – {site_id}',
+                    '⚠️ High Site Risk Alert – {sql_escape(site_id)}',
                     '{safe_auto_email_body}'
                 )
                 """
@@ -1552,10 +1564,10 @@ if results:
     Focus on actions that reduce the most risk.
     
     Hazard frequency summary:
-    {hazard_summary}
+    {sql_escape(hazard_summary)}
     
     Observed corrective actions:
-    {all_actions_text}
+    {sql_escape(all_actions_text)}
     
     Use this exact format:
     - [Action]
@@ -1910,7 +1922,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
         HIGHEST_IMAGE_SCORE
     )
     VALUES (
-        '{site_id}',
+        '{sql_escape(site_id)}',
         CONVERT_TIMEZONE('America/Los_Angeles', 'Asia/Kuala_Lumpur', CURRENT_TIMESTAMP()),
         {len(results)},
         {round(weighted_score, 2)},
@@ -1934,7 +1946,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
         SITE_SEVERITY AS "Severity",
         HIGHEST_IMAGE_SCORE AS "Highest Image Score"
     FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_RISK_HISTORY
-    WHERE SITE_ID = '{site_id}'
+    WHERE SITE_ID = '{sql_escape(site_id)}'
     ORDER BY INSPECTION_TS DESC
     """).to_pandas()
 
@@ -1949,7 +1961,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
     FROM (
         SELECT WEIGHTED_SITE_RISK_SCORE
         FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_RISK_HISTORY
-        WHERE SITE_ID = '{site_id}'
+        WHERE SITE_ID = '{sql_escape(site_id)}'
         ORDER BY INSPECTION_TS DESC
         LIMIT 3
     )
@@ -2059,7 +2071,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
         WITH last_10_inspections AS (
             SELECT DISTINCT INSPECTION_TS
             FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_HAZARD_HISTORY
-            WHERE SITE_ID = '{site_id}'
+            WHERE SITE_ID = '{sql_escape(site_id)}'
             ORDER BY INSPECTION_TS DESC
             LIMIT 10
         )
@@ -2067,7 +2079,7 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
             HAZARD_CATEGORY,
             SUM(HAZARD_COUNT) AS TOTAL_COUNT
         FROM SYNOGIZE_DB.AISQL_SITE_SAFETY.SITE_HAZARD_HISTORY
-        WHERE SITE_ID = '{site_id}'
+        WHERE SITE_ID = '{sql_escape(site_id)}'
           AND INSPECTION_TS IN (SELECT INSPECTION_TS FROM last_10_inspections)
         GROUP BY HAZARD_CATEGORY
         ORDER BY TOTAL_COUNT DESC
@@ -2310,8 +2322,8 @@ letter-spacing:0.06em; color:{MUTED};">HIGH RISK THRESHOLD 7.0</div>
                             f"""
                             CALL SYSTEM$SEND_EMAIL(
                                 'SITE_EMAIL_INT',
-                                '{recipient_email}',
-                                'Site Safety Risk Assessment – {site_id}',
+                                '{sql_escape(recipient_email)}',
+                                'Site Safety Risk Assessment – {sql_escape(site_id)}',
                                 '{safe_email_body}'
                             )
                             """
