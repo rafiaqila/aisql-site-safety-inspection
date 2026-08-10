@@ -13,13 +13,13 @@ This application analyzes site inspection images to:
 
 ---
 
-## 🎥 Demo Video
-▶️ **Application Demo (YouTube):**  
+## Demo Video
+**Application Demo (YouTube):**  
 https://youtu.be/CPCsGUesCik
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 **Technology Stack**
 - Snowflake AI SQL (`AI_FILTER`, `AI_CLASSIFY`, `AI_COMPLETE`)
@@ -40,7 +40,7 @@ https://youtu.be/CPCsGUesCik
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ### `ai_sql_functions/`
 Contains isolated AISQL queries used by the application.
@@ -97,7 +97,7 @@ Run these scripts **in order** during setup.
 
 ---
 
-## ⚠️ Model Notes
+## Model Notes
 
 - **Model used:** Claude Sonnet 4.0
 - Fixed model selection ensures:
@@ -108,7 +108,7 @@ Run these scripts **in order** during setup.
 
 ---
 
-## 📤 Outputs & Exports
+## Outputs & Exports
 
 - Site Safety Report (HTML)
 - Corrective Actions Checklist (CSV)
@@ -126,7 +126,7 @@ Contains sample site inspection images used for:
 - Reproducible analysis
 
 ---
-## 📊 Presentation & Demo Assets
+## Presentation & Demo Assets
 
 ### `presentation/`
 Contains presentation materials submitted with this project.
@@ -136,7 +136,7 @@ Contains presentation materials submitted with this project.
 
 ---
 
-## 👤 Author
+## Author
 
 **Rafi Aqila Hidayat**  
 Synogize Snowflake AISQL Innovation Challenge
