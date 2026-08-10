@@ -84,7 +84,7 @@ Run these scripts **in order** during setup.
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 1. **Run setup scripts (ACCOUNTADMIN)**  
    Execute all files in `setup_scripts/` in sequence.
@@ -117,7 +117,7 @@ Run these scripts **in order** during setup.
 
 ---
 
-## 📸 Sample Inputs
+## Sample Inputs
 
 ### `input_images/`
 Contains sample site inspection images used for:
@@ -131,7 +131,7 @@ Contains sample site inspection images used for:
 ### `presentation/`
 Contains presentation materials submitted with this project.
 
-- **PowerPoint slides**: 📁 `presentation/Rafi AISQL Challenge_Site Safety Hazard & Risk Inspection.pptx`
+- **PowerPoint slides**: `presentation/Rafi AISQL Challenge_Site Safety Hazard & Risk Inspection.pptx`
 - **Demo screenshots** used in the presentation
 
 ---
